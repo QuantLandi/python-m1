@@ -1,9 +1,5 @@
 # Syllabus — Python Programming for Finance
 
-> **Status:** Draft v0.2 — built collaboratively. Weekly schedule TBD (12 × 90 min sessions).
-
----
-
 ## Administrative information
 
 | Field | Value |
@@ -26,8 +22,6 @@ This course introduces Python programming for financial data analysis. Students 
 The course uses finance-themed examples (stock prices, market listings, returns) but focuses on programming and data skills rather than financial theory.
 
 **Prerequisite:** none. Familiarity with spreadsheets is helpful but not required.
-
-**Redesign note (Fall 2026):** Python-only. VBA content from previous editions is not part of this course.
 
 ---
 
@@ -63,25 +57,38 @@ Upon completion, students will be able to:
 
 > Verify DataCamp licensing before classroom use.
 
+### Pre-class work
+
+Students complete the corresponding DataCamp course **before** each session. Class time is not used for first exposure to new material; it focuses on clarification, live coding, and exam-style exercises.
+
 ---
 
 ## Schedule
 
 **Contact time:** 12 sessions × 90 minutes (18 hours total).
 
-### Topic blocks (provisional order)
+Complete the listed DataCamp course **before** the corresponding session (see [Pre-class work](#pre-class-work)).
 
-1. Python basics — variables, types, operators, lists
-2. NumPy — arrays and vectorization
-3. Datetimes and comparison operators
-4. pandas — DataFrames, exploration, filtering
-5. pandas — aggregation, groupby, indexing
-6. Missing data, plotting, CSV/Excel import
-7. Financial data APIs
-8. Time series — timestamps, resampling, rolling windows
-9. Functions — user-defined functions, scope, arguments
-10. Software engineering — docstrings, PEP 8, testing basics
-11. Review and exam preparation
+| Session | Complete before class | In class |
+|--------:|----------------------|----------|
+| 1 | [Introduction to Python for Finance](https://app.datacamp.com/learn/courses/introduction-to-python-for-finance) | Python basics, lists, NumPy — clarification and exam-style exercises |
+| 2 | [Intermediate Python for Finance](https://app.datacamp.com/learn/courses/intermediate-python-for-finance) | Datetimes, comparisons, DataFrame basics — clarification and exam-style exercises |
+| 3 | [Data Manipulation with Pandas](https://app.datacamp.com/learn/courses/data-manipulation-with-pandas) | DataFrames, filtering, aggregation, indexing — clarification and exam-style exercises |
+| 4 | [Importing and Managing Financial Data in Python](https://app.datacamp.com/learn/courses/importing-and-managing-financial-data-in-python) | CSV/Excel import, cleaning, groupby — clarification and exam-style exercises |
+| 5 | [Manipulating Time Series Data in Python](https://app.datacamp.com/learn/courses/manipulating-time-series-data-in-python) | Timestamps, resampling, rolling/expanding windows — clarification and exam-style exercises |
+| 6 | [Introduction to Functions in Python](https://app.datacamp.com/learn/courses/introduction-to-functions-in-python) | User-defined functions, scope, docstrings — clarification and exam-style exercises |
+| — | **Midterm exam** | Covers the six courses above |
+| 7 | [Software Engineering Principles in Python](https://app.datacamp.com/learn/courses/software-engineering-principles-in-python) | Modularity, PEP 8, testing — clarification and exam-style exercises |
+| 8 | — | **In-class project** |
+| 9 | — | **In-class project** |
+| 10 | — | **In-class project** |
+| 11 | — | **In-class project** |
+| 12 | — | **In-class project** |
+
+Students follow one of two tracks for sessions 8–12:
+
+- **Structured Products** — build a derivative pricing tool
+- **Corporate Valuation** — build a company valuation tool
 
 ---
 
@@ -138,3 +145,6 @@ Same format as the final exam. A new question set is used. Resit grade replaces 
 |---------|------|---------|
 | 0.1 | 2026-07-14 | Initial scaffold |
 | 0.2 | 2026-07-14 | Collaborative draft — scope, English, all-or-nothing scoring |
+| 0.3 | 2026-07-14 | Added pre-class DataCamp work model |
+| 0.4 | 2026-07-14 | 12-session schedule tied to DataCamp courses |
+| 0.5 | 2026-07-14 | Sessions 8–12 — track-based in-class projects |
