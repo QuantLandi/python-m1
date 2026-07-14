@@ -106,7 +106,7 @@ Students follow one of two tracks for sessions 8–12:
 ### Exam rules
 
 - **Duration:** 2 hours `[confirm]`
-- **Questions:** 20; each presents a code snippet and 5 true/false statements
+- **Questions:** 40; each presents a code snippet and 5 true/false statements
 - **Authorized documents:** none
 - **Calculator:** not allowed
 - **Draft paper:** not allowed
@@ -119,32 +119,10 @@ Each question receives **full credit or zero**:
 - Full credit if **all** true/false selections for that question are correct
 - Zero credit if **any** selection is wrong or any required selection is missing
 - No partial credit within a question
-- No penalty scoring (unlike Fall 2025, which used ±1 per statement)
+- No penalty scoring
 
-**Maximum score:** 20 points (1 point per question) `[confirm weighting with administration]`
+**Maximum score:** 40 points (0.5 point per question)
 
 ### Resit
 
 Same format as the final exam. A new question set is used. Resit grade replaces the final exam grade per program rules.
-
----
-
-## Policies
-
-| Policy | Detail |
-|--------|--------|
-| Attendance | `[TBD — program requirement]` |
-| Academic integrity | `[TBD — institution policy link]` |
-| Accessibility | Contact course leader for accommodations |
-
----
-
-## Document history
-
-| Version | Date | Changes |
-|---------|------|---------|
-| 0.1 | 2026-07-14 | Initial scaffold |
-| 0.2 | 2026-07-14 | Collaborative draft — scope, English, all-or-nothing scoring |
-| 0.3 | 2026-07-14 | Added pre-class DataCamp work model |
-| 0.4 | 2026-07-14 | 12-session schedule tied to DataCamp courses |
-| 0.5 | 2026-07-14 | Sessions 8–12 — track-based in-class projects |
