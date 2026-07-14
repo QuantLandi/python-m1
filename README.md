@@ -2,6 +2,11 @@
 
 PGE M1 · Fall 2026 · instructor repo
 
-See [syllabus.md](syllabus.md).
+| File | Purpose |
+|------|---------|
+| [syllabus.md](syllabus.md) | Course syllabus |
+| [instructor-guide.md](instructor-guide.md) | Teaching notes and recommendations |
+| [quizzes/session-01-quiz.md](quizzes/session-01-quiz.md) | Session 1 in-class practice quiz |
+| [quizzes/session-01-quiz-answers.md](quizzes/session-01-quiz-answers.md) | Answer key (instructor only) |
 
-Course slides and scripts are in the parent folder: [`../slides/`](../slides/), [`../scripts/`](../scripts/).
+Slide PDFs and extracted content: [`../slides/`](../slides/), [`../scripts/`](../scripts/).
