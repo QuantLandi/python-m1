@@ -121,7 +121,7 @@ Each question receives **full credit or zero**:
 - No partial credit within a question
 - No penalty scoring
 
-**Maximum score:** 40 points (0.5 point per question)
+**Maximum score:** 20 points (0.5 point per question)
 
 ### Resit
 
