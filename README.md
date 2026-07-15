@@ -8,5 +8,3 @@ PGE M1 · Fall 2026 · instructor repo
 | [instructor-guide.md](instructor-guide.md) | Teaching notes and recommendations |
 | [quizzes/session-01-quiz.md](quizzes/session-01-quiz.md) | Session 1 in-class practice quiz |
 | [quizzes/session-01-quiz-answers.md](quizzes/session-01-quiz-answers.md) | Answer key (instructor only) |
-
-Slide PDFs and extracted content: [`../slides/`](../slides/), [`../scripts/`](../scripts/).
