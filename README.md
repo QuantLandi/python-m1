@@ -25,6 +25,14 @@ Exams test **reading and predicting code without AI**. Use Cursor’s AI to lear
 - **Class practice / quizzes / DataCamp / project:** try without AI first; AI is OK only if you can explain every line of the result.
 - **Midterm & final:** closed book, **no AI**.
 
+## Contributing quizzes (instructors)
+
+For sessions 3–12, add quizzes via pull request (do not push straight to `main`).
+
+1. Clone this repo and create a branch (one **session per PR**).
+2. Add `quizzes/session-NN-quiz.md` and `quizzes/session-NN-quiz-answers.md`, matching the session 1–2 pattern (exam-style code + 5 true/false; answer key with **CORRECT ANSWERS** and a short **Debrief tip**). Cross-link the two files and align scope with that session’s DataCamp course in [syllabus.md](syllabus.md).
+3. Update the file table below with both new links.
+4. Open a PR. Do **not** commit `.venv/` (or other local IDE junk); `uv.lock` / `pyproject.toml` only if you intentionally change dependencies.
 
 | File                                                                     | Purpose                                         |
 | ------------------------------------------------------------------------ | ----------------------------------------------- |
