@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# uv
+# uv.lock is committed for reproducibility
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

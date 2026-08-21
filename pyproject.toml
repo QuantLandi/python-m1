@@ -1,0 +1,9 @@
+[project]
+name = "python-m1"
+version = "0.1.0"
+description = "Python Programming for Finance — PGE M1 Fall 2026"
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.5.2",
+    "pandas>=3.0.5",
+]
