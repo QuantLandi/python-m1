@@ -27,17 +27,19 @@ Exams test **reading and predicting code without AI**. Use Cursor’s AI to lear
 
 ## Contributing quizzes (instructors)
 
-For sessions 3–12, add quizzes via pull request (do not push straight to `main`).
+How to write a quiz (format, item-writing, QA, in class): [instructor-guide.md — Creating quizzes](instructor-guide.md#creating-quizzes).
+
+For remaining DataCamp sessions (3–7), add quizzes via pull request (do not push straight to `main`). Sessions 8–12 are in-class project, not this quiz format.
 
 1. Clone this repo and create a branch (one **session per PR**).
-2. Add `quizzes/session-NN-quiz.md` and `quizzes/session-NN-quiz-answers.md`, matching the session 1–2 pattern (exam-style code + 5 true/false; answer key with **CORRECT ANSWERS** and a short **Debrief tip**). Cross-link the two files and align scope with that session’s DataCamp course in [syllabus.md](syllabus.md).
+2. Add `quizzes/session-NN-quiz.md` and `quizzes/session-NN-quiz-answers.md`, matching the session 1–2 pattern (exam-style code + 5 true/false; answer key with **CORRECT ANSWERS** and a short **Debrief tip**). Link the student file to the answer key and align scope with that session’s DataCamp course in [syllabus.md](syllabus.md).
 3. Update the file table below with both new links.
 4. Open a PR. Do **not** commit `.venv/` (or other local IDE junk); `uv.lock` / `pyproject.toml` only if you intentionally change dependencies.
 
 | File                                                                     | Purpose                                         |
 | ------------------------------------------------------------------------ | ----------------------------------------------- |
 | [syllabus.md](syllabus.md)                                               | Course syllabus                                 |
-| [instructor-guide.md](instructor-guide.md)                               | Teaching notes and recommendations              |
+| [instructor-guide.md](instructor-guide.md)                               | Teaching notes; how to create quizzes           |
 | [pyproject.toml](pyproject.toml)                                         | Python project / dependencies (managed with uv) |
 | [quizzes/session-01-quiz.md](quizzes/session-01-quiz.md)                 | Session 1 in-class practice quiz                |
 | [quizzes/session-01-quiz-answers.md](quizzes/session-01-quiz-answers.md) | Session 1 answer key (instructor only)          |
