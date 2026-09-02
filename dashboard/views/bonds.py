@@ -189,24 +189,25 @@ def render() -> None:
         st.info("U.S. Treasury yield curve snapshot unavailable.")
     else:
         curve_rows.sort(key=lambda row: row[0])
-        maturities, tenors, values = zip(*curve_rows)
+        tenors = [row[1] for row in curve_rows]
+        values = [row[2] for row in curve_rows]
         fig = go.Figure(
             data=[
                 go.Scatter(
-                    x=list(maturities),
-                    y=list(values),
+                    x=tenors,
+                    y=values,
                     mode="lines+markers",
                     line=dict(width=2, color=CHART_COLOR),
                     marker=dict(size=8, color=CHART_COLOR),
-                    customdata=list(tenors),
-                    hovertemplate="Tenor: %{customdata}<br>Yield: %{y:.2f}%<extra></extra>",
+                    hovertemplate="Tenor: %{x}<br>Yield: %{y:.2f}%<extra></extra>",
                 )
             ]
         )
         fig.update_layout(
             title=f"U.S. Treasury curve ({as_of_text})",
-            xaxis_title="Maturity (years)",
+            xaxis_title="Tenor",
             yaxis_title="Yield (%)",
+            xaxis=dict(type="category", dtick=1),
             height=420,
             template="plotly_white",
             margin=dict(t=60, b=40),
