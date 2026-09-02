@@ -302,3 +302,138 @@ def normalize(data: pd.DataFrame) -> pd.DataFrame:
         lambda series: series.dropna().iloc[0] if series.notna().any() else float("nan")
     )
     return data.div(first)
+
+
+def _simple_return(last: float, base: float) -> float | None:
+    if base == 0:
+        return None
+    return float(last / base - 1)
+
+
+def _trailing_return(series: pd.Series, days: int) -> float | None:
+    series = series.dropna().sort_index()
+    if series.empty:
+        return None
+    last = series.iloc[-1]
+    prior = series.loc[: series.index[-1] - pd.Timedelta(days=days)]
+    if prior.empty:
+        return None
+    return _simple_return(last, prior.iloc[-1])
+
+
+def _trading_day_return(series: pd.Series) -> float | None:
+    series = series.dropna().sort_index()
+    if len(series) < 2:
+        return None
+    return _simple_return(series.iloc[-1], series.iloc[-2])
+
+
+def _since_return(series: pd.Series, period_start: pd.Timestamp) -> float | None:
+    series = series.dropna().sort_index()
+    window = series.loc[period_start:]
+    if window.empty:
+        return None
+    return _simple_return(window.iloc[-1], window.iloc[0])
+
+
+# Okabe–Ito palette: readable with red–green colour blindness (signs stay in the text too).
+RETURN_COLOR_POSITIVE = "#56B4E9"
+RETURN_COLOR_NEGATIVE = "#D55E00"
+RETURN_COLOR_NEUTRAL = "#FFFFFF"
+
+
+def _format_return(value: float | None) -> str:
+    if value is None:
+        return "—"
+    text = f"{value:+.1%}"
+    if abs(value) < 0.0005:
+        color = RETURN_COLOR_NEUTRAL
+    elif value > 0:
+        color = RETURN_COLOR_POSITIVE
+    else:
+        color = RETURN_COLOR_NEGATIVE
+    return f'<span style="color:{color}">{text}</span>'
+
+
+RETURNS_TABLE_CSS = """
+<style>
+table.returns-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.25rem 0 1rem 0;
+  font-size: 1.2rem;
+}
+table.returns-table th {
+  background-color: #2A2118;
+  color: #FF962F;
+  font-weight: 600;
+  padding: 0.65rem 0.75rem;
+  text-align: center;
+  border: 1px solid #2A2A2A;
+}
+table.returns-table td {
+  background-color: #1F1F1F;
+  color: #FFFFFF;
+  padding: 0.75rem 0.75rem;
+  text-align: center;
+  font-size: 1.35rem;
+  border: 1px solid #2A2A2A;
+}
+</style>
+"""
+
+
+def _show_returns_table(frame: pd.DataFrame) -> None:
+    html = frame.to_html(
+        index=False,
+        classes="returns-table",
+        border=0,
+        justify="center",
+        escape=False,
+    )
+    st.markdown(html, unsafe_allow_html=True)
+
+
+def render_return_metrics(prices: pd.Series, *, inject_css: bool = True) -> None:
+    """Trailing (1d–1y) and calendar (WTD–YTD) return tables for one price series."""
+    series = prices.dropna()
+    if series.empty:
+        st.info("No prices available to compute returns.")
+        return
+
+    last_day = series.index[-1]
+    week_start = last_day - pd.Timedelta(days=int(last_day.weekday()))
+    month_start = last_day.replace(day=1)
+    quarter_month = ((last_day.month - 1) // 3) * 3 + 1
+    quarter_start = last_day.replace(month=quarter_month, day=1)
+    year_start = last_day.replace(month=1, day=1)
+
+    trailing = {
+        "1-day": _trading_day_return(prices),
+        "7-day": _trailing_return(prices, 7),
+        "30-day": _trailing_return(prices, 30),
+        "90-day": _trailing_return(prices, 90),
+        "1-year": _trailing_return(prices, 365),
+    }
+    calendar = {
+        "Week to date": _since_return(prices, week_start),
+        "Month to date": _since_return(prices, month_start),
+        "Quarter to date": _since_return(prices, quarter_start),
+        "Year to date": _since_return(prices, year_start),
+    }
+
+    trailing_table = pd.DataFrame(
+        {label: [_format_return(value)] for label, value in trailing.items()},
+        index=["Return"],
+    )
+    calendar_table = pd.DataFrame(
+        {label: [_format_return(value)] for label, value in calendar.items()},
+        index=["Return"],
+    )
+
+    if inject_css:
+        st.markdown(RETURNS_TABLE_CSS, unsafe_allow_html=True)
+    st.caption("Trailing returns")
+    _show_returns_table(trailing_table)
+    st.caption("Calendar returns")
+    _show_returns_table(calendar_table)
