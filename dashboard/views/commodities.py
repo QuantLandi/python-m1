@@ -10,6 +10,7 @@ from views.common import (
     chart_layout,
     date_range_error,
     download_data,
+    get_available_date_bounds,
     lookback_start,
     normalize,
 )
@@ -71,7 +72,12 @@ def render() -> None:
     st.header(":material/oil_barrel: Commodities")
     st.caption("Metals, energy, and grains — futures prices from Yahoo Finance.")
 
-    earliest_date = COMMODITY_EARLIEST
+    starts = [COMMODITY_EARLIEST]
+    for ticker in ALL_TICKERS:
+        bounds = get_available_date_bounds(ticker)
+        if bounds is not None:
+            starts.append(bounds[0])
+    earliest_date = min(starts)
 
     def _apply_lookback() -> None:
         end = DEFAULT_END_DATE
@@ -131,10 +137,18 @@ def render() -> None:
 
     if prices.empty:
         st.error(
-            "No commodity prices returned from Yahoo Finance. "
-            "The public feed may be unavailable, and there is no bundled fallback for these futures."
+            "No commodity prices available. "
+            "Yahoo Finance may be blocked from this server, and bundled fallback files are missing."
         )
         return
+
+    bundled_ends = []
+    for ticker in selected_tickers:
+        bounds = get_available_date_bounds(ticker)
+        if bounds is not None:
+            bundled_ends.append(bounds[1])
+    if bundled_ends and prices.index[-1].date() <= max(bundled_ends) < end_date:
+        st.info("Showing bundled commodity data (live Yahoo Finance fetch unavailable).")
 
     st.sidebar.caption(f"Last updated: {prices.index[-1].strftime('%Y-%m-%d')}")
 
