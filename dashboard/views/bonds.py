@@ -124,6 +124,13 @@ def render() -> None:
             max_value=DEFAULT_END_DATE,
             key="bonds_end_date",
         )
+        oecd_country_labels = [label for _, label in OECD_10Y_SERIES]
+        selected_oecd_labels = st.multiselect(
+            "OECD countries",
+            options=oecd_country_labels,
+            default=oecd_country_labels,
+            key="oecd_countries",
+        )
 
     if start_date > end_date:
         st.warning("Start date must be on or before the end date.")
@@ -151,33 +158,44 @@ def render() -> None:
     st.sidebar.caption(f"Last updated: {as_of_text}")
 
     treasury_ids = [series_id for series_id, _, _ in TREASURY_SERIES]
-    oecd_ids = [series_id for series_id, _ in OECD_10Y_SERIES]
     oecd_labels = {series_id: label for series_id, label in OECD_10Y_SERIES}
     treasury_labels = {series_id: label for series_id, label, _ in TREASURY_SERIES}
+    selected_oecd_ids = [
+        series_id
+        for series_id, label in OECD_10Y_SERIES
+        if label in selected_oecd_labels
+    ]
 
-    oecd_latest = latest.reindex(oecd_ids).dropna().sort_values()
-    if oecd_latest.empty:
-        st.info("OECD 10Y yield snapshot unavailable.")
+    if not selected_oecd_ids:
+        st.info("Select at least one OECD country to display 10-year yields.")
     else:
-        labels = [oecd_labels[series_id] for series_id in oecd_latest.index]
-        fig = go.Figure(
-            data=[
-                go.Bar(
-                    x=labels,
-                    y=oecd_latest.astype(float),
-                    marker=dict(color=_orange_gradient(len(oecd_latest))),
-                    hovertemplate="%{x}: %{y:.2f}%<extra></extra>",
+        oecd_history = yields[
+            [col for col in selected_oecd_ids if col in yields.columns]
+        ].dropna(how="all")
+        if oecd_history.empty:
+            st.info("OECD 10Y time series unavailable.")
+        else:
+            fig = go.Figure()
+            for series_id in oecd_history.columns:
+                fig.add_trace(
+                    go.Scatter(
+                        x=oecd_history.index,
+                        y=oecd_history[series_id],
+                        mode="lines",
+                        name=oecd_labels[series_id],
+                        hovertemplate="%{y:.2f}%<br>%{x|%Y-%m-%d}<extra>%{fullData.name}</extra>",
+                    )
                 )
-            ]
-        )
-        fig.update_layout(
-            title=f"OECD 10-year yields ({as_of_text})",
-            yaxis_title="Yield (%)",
-            height=420,
-            template="plotly_white",
-            margin=dict(t=60, b=40),
-        )
-        st.plotly_chart(fig, use_container_width=True)
+            fig.update_layout(
+                title="OECD 10-year yields over time",
+                yaxis_title="Yield (%)",
+                xaxis_title="Date",
+                height=420,
+                template="plotly_white",
+                hovermode="x unified",
+                margin=dict(t=60, b=40),
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
     curve_rows = []
     for series_id, tenor, years in TREASURY_SERIES:
@@ -214,31 +232,30 @@ def render() -> None:
         )
         st.plotly_chart(fig, use_container_width=True)
 
-    oecd_history = yields[[col for col in oecd_ids if col in yields.columns]].dropna(how="all")
-    if oecd_history.empty:
-        st.info("OECD 10Y time series unavailable.")
-    else:
-        fig = go.Figure()
-        for series_id in oecd_history.columns:
-            fig.add_trace(
-                go.Scatter(
-                    x=oecd_history.index,
-                    y=oecd_history[series_id],
-                    mode="lines",
-                    name=oecd_labels[series_id],
-                    hovertemplate="%{y:.2f}%<br>%{x|%Y-%m-%d}<extra>%{fullData.name}</extra>",
-                )
+    if selected_oecd_ids:
+        oecd_latest = latest.reindex(selected_oecd_ids).dropna().sort_values()
+        if oecd_latest.empty:
+            st.info("OECD 10Y yield snapshot unavailable.")
+        else:
+            labels = [oecd_labels[series_id] for series_id in oecd_latest.index]
+            fig = go.Figure(
+                data=[
+                    go.Bar(
+                        x=labels,
+                        y=oecd_latest.astype(float),
+                        marker=dict(color=_orange_gradient(len(oecd_latest))),
+                        hovertemplate="%{x}: %{y:.2f}%<extra></extra>",
+                    )
+                ]
             )
-        fig.update_layout(
-            title="OECD 10-year yields over time",
-            yaxis_title="Yield (%)",
-            xaxis_title="Date",
-            height=420,
-            template="plotly_white",
-            hovermode="x unified",
-            margin=dict(t=60, b=40),
-        )
-        st.plotly_chart(fig, use_container_width=True)
+            fig.update_layout(
+                title=f"OECD 10-year yields ({as_of_text})",
+                yaxis_title="Yield (%)",
+                height=420,
+                template="plotly_white",
+                margin=dict(t=60, b=40),
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
     treasury_history = yields[
         [col for col in treasury_ids if col in yields.columns]
