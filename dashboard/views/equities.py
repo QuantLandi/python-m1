@@ -11,7 +11,6 @@ from views.common import (
     DEFAULT_START_DATE,
     download_data,
     get_available_date_bounds,
-    normalize,
     preprocess,
 )
 
@@ -190,8 +189,7 @@ def render() -> None:
 
     _render_return_metrics(prices[SP500_TICKER])
 
-    normalized = normalize(chart_prices)
-    series = normalized[SP500_TICKER]
+    series = chart_prices[SP500_TICKER]
 
     fig = go.Figure()
     fig.add_trace(
@@ -201,14 +199,14 @@ def render() -> None:
             mode="lines",
             name="S&P 500",
             line=dict(width=2, color="#FF962F"),
-            hovertemplate="%{y:.2f}x %{x|%Y-%m-%d}<extra>S&P 500</extra>",
+            hovertemplate="%{y:,.2f}<br>%{x|%Y-%m-%d}<extra>S&P 500</extra>",
         )
     )
     fig.update_layout(
-        title="S&P 500 — Normalized Performance",
+        title="S&P 500",
         height=450,
         template="plotly_white",
-        yaxis_title="Cumulative Return (×)",
+        yaxis_title="Index level",
         xaxis_title="Date",
         hovermode="x unified",
         margin=dict(t=60, b=40),
