@@ -19,12 +19,25 @@ DEFAULT_START_DATE = date(2010, 1, 1)  # fallback when no stored series exists
 DEFAULT_END_DATE = date.today()
 
 
+def _storage_filename(symbol: str) -> str:
+    """Filesystem-safe name for cache and bundled CSV files."""
+    return symbol.replace("^", "").replace("=", "_")
+
+
 def _cache_path(symbol: str) -> Path:
-    return DATA_CACHE_DIR / f"{symbol}.csv"
+    return DATA_CACHE_DIR / f"{_storage_filename(symbol)}.csv"
 
 
 def _bundled_path(symbol: str) -> Path:
-    return DATA_DIR / f"{symbol}.csv"
+    return DATA_DIR / f"{_storage_filename(symbol)}.csv"
+
+
+def _legacy_paths(symbol: str) -> tuple[Path, ...]:
+    """Older files that used the raw ticker in the filename."""
+    return (
+        DATA_DIR / f"{symbol}.csv",
+        DATA_CACHE_DIR / f"{symbol}.csv",
+    )
 
 
 def _read_price_csv(path: Path, symbol: str) -> pd.Series | None:
@@ -39,7 +52,12 @@ def _read_price_csv(path: Path, symbol: str) -> pd.Series | None:
 def _load_stored_series(symbol: str) -> pd.Series | None:
     """Load the widest available price series from bundled data and cache."""
     series_parts: list[pd.Series] = []
-    for path in (_bundled_path(symbol), _cache_path(symbol)):
+    candidate_paths = (_bundled_path(symbol), _cache_path(symbol), *_legacy_paths(symbol))
+    seen_paths: set[Path] = set()
+    for path in candidate_paths:
+        if path in seen_paths:
+            continue
+        seen_paths.add(path)
         part = _read_price_csv(path, symbol)
         if part is not None:
             series_parts.append(part)
@@ -47,6 +65,20 @@ def _load_stored_series(symbol: str) -> pd.Series | None:
         return None
     combined = pd.concat(series_parts).sort_index()
     return combined[~combined.index.duplicated(keep="last")]
+
+
+def _merge_live_and_stored(symbol: str, live: pd.Series | None) -> pd.Series:
+    """Combine stored history with live prices; live wins on overlapping dates."""
+    stored = _load_stored_series(symbol)
+    parts: list[pd.Series] = []
+    if stored is not None:
+        parts.append(stored)
+    if live is not None and not live.empty:
+        parts.append(live.dropna())
+    if not parts:
+        return pd.Series(dtype=float, name=symbol)
+    combined = pd.concat(parts).sort_index()
+    return combined[~combined.index.duplicated(keep="last")].rename(symbol)
 
 
 def get_available_date_bounds(symbol: str) -> tuple[date, date] | None:
@@ -143,19 +175,19 @@ def download_data(
         return pd.DataFrame()
 
     tickers = tuple(tickers)
-    fetched = pd.DataFrame()
+    merged_frames: list[pd.Series] = []
+    live_frame = _fetch_live_prices(tickers, start_date, end_date) if use_live else pd.DataFrame()
 
-    if use_live:
-        fetched = _fetch_live_prices(tickers, start_date, end_date)
+    for symbol in tickers:
+        live_series = live_frame[symbol] if symbol in live_frame.columns else None
+        series = _merge_live_and_stored(symbol, live_series)
+        if not series.empty:
+            merged_frames.append(series)
 
-    if fetched.empty:
-        stored_frames = []
-        for symbol in tickers:
-            series = _load_stored_series(symbol)
-            if series is not None:
-                stored_frames.append(series)
-        if stored_frames:
-            fetched = pd.concat(stored_frames, axis=1).sort_index()
+    if not merged_frames:
+        return pd.DataFrame()
+
+    fetched = pd.concat(merged_frames, axis=1).sort_index()
 
     if fetched.empty:
         return pd.DataFrame()

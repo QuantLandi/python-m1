@@ -58,8 +58,8 @@ def render() -> None:
         )
         return
 
-    cache_file = DATA_CACHE_DIR / f"{SP500_TICKER}.csv"
-    bundled_file = DATA_DIR / f"{SP500_TICKER}.csv"
+    cache_file = DATA_CACHE_DIR / f"{SP500_TICKER.replace('^', '').replace('=', '_')}.csv"
+    bundled_file = DATA_DIR / f"{SP500_TICKER.replace('^', '').replace('=', '_')}.csv"
     if not cache_file.exists() and bundled_file.exists():
         st.info("Showing bundled S&P 500 data (live Yahoo Finance fetch unavailable).")
 
