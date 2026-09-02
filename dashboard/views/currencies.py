@@ -65,12 +65,12 @@ def usd_per_paths(prices: pd.DataFrame) -> pd.DataFrame:
             continue
         usd_paths[currency] = series.map(lambda price: usd_per_unit(price, convention))
 
-    return pd.DataFrame(usd_paths).ffill().dropna(how="any")
+    return pd.DataFrame(usd_paths).ffill()
 
 
 def last_usd_per_units(prices: pd.DataFrame) -> tuple[pd.Timestamp, pd.Series] | None:
     """Last aligned USD-per-unit vector from USD-leg closes."""
-    aligned = usd_per_paths(prices)
+    aligned = usd_per_paths(prices).dropna(how="any")
     if aligned.empty:
         return None
     last_date = aligned.index[-1]
@@ -79,7 +79,9 @@ def last_usd_per_units(prices: pd.DataFrame) -> tuple[pd.Timestamp, pd.Series] |
 
 def pair_rate(usd_paths: pd.DataFrame, numerator: str, denominator: str) -> pd.Series:
     """Units of denominator per 1 unit of numerator."""
-    return (usd_paths[numerator] / usd_paths[denominator]).rename(f"{numerator}/{denominator}")
+    return (usd_paths[numerator] / usd_paths[denominator]).dropna().rename(
+        f"{numerator}/{denominator}"
+    )
 
 
 def _format_rate(value: float, quote: str) -> str:
@@ -117,12 +119,12 @@ def render() -> None:
         "Each cell is units of the column currency per 1 unit of the row currency."
     )
 
-    starts = [FX_EARLIEST]
+    starts = []
     for ticker in FX_TICKERS:
         bounds = get_available_date_bounds(ticker)
         if bounds is not None:
             starts.append(bounds[0])
-    earliest_date = min(starts)
+    earliest_date = min(starts) if starts else FX_EARLIEST
 
     def _apply_lookback() -> None:
         end = DEFAULT_END_DATE
@@ -199,12 +201,13 @@ def render() -> None:
         st.info("Showing bundled FX data (live Yahoo Finance fetch unavailable).")
 
     aligned = usd_per_paths(prices)
-    if aligned.empty:
+    complete = aligned.dropna(how="any")
+    if complete.empty:
         st.error("Could not align USD legs into a complete currency matrix.")
         return
 
-    as_of = aligned.index[-1]
-    usd_per = aligned.loc[as_of]
+    as_of = complete.index[-1]
+    usd_per = complete.loc[as_of]
     missing = [ccy for ccy in CURRENCIES if ccy not in usd_per.index]
     if missing:
         st.warning("Missing USD legs for: " + ", ".join(missing))
@@ -213,6 +216,9 @@ def render() -> None:
     matrix = spot_cross_matrix(usd_per.loc[ordered])
 
     st.sidebar.caption(f"Last updated: {as_of.strftime('%Y-%m-%d')}")
+
+    st.subheader(f"Spot matrix — {as_of.strftime('%Y-%m-%d')}")
+    _show_spot_matrix(matrix)
 
     pair_name = f"{numerator}/{denominator}"
     chart_mask = (aligned.index >= pd.Timestamp(start_date)) & (
@@ -244,9 +250,6 @@ def render() -> None:
             )
         )
         st.plotly_chart(fig, use_container_width=True)
-
-    st.subheader(f"Spot matrix — {as_of.strftime('%Y-%m-%d')}")
-    _show_spot_matrix(matrix)
 
 
 try:
