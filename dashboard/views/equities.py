@@ -73,7 +73,7 @@ def _since_return(series: pd.Series, period_start: pd.Timestamp) -> float | None
 def _format_return(value: float | None) -> str:
     if value is None:
         return "—"
-    return f"{value:+.2%}"
+    return f"{value:+.1%}"
 
 
 def _render_return_metrics(prices: pd.Series) -> None:
@@ -104,13 +104,10 @@ def _render_return_metrics(prices: pd.Series) -> None:
         index=["Return"],
     )
 
-    left, right = st.columns((5, 3))
-    with left:
-        st.caption("Trailing returns")
-        st.table(trailing_table)
-    with right:
-        st.caption("Calendar returns")
-        st.table(calendar_table)
+    st.caption("Trailing returns")
+    st.table(trailing_table)
+    st.caption("Calendar returns")
+    st.table(calendar_table)
 
 
 def render() -> None:
