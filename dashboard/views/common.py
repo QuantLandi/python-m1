@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
-from pathlib import Path
 from typing import Tuple
 
 import pandas as pd
@@ -11,7 +10,7 @@ import pandas_datareader.data as web
 import streamlit as st
 import yfinance as yf
 
-from paths import DATA_CACHE_DIR, DATA_DIR
+from paths import DATA_DIR
 
 DEFAULT_START_DATE = date(1927, 12, 30)  # ^GSPC bundled history start; used if CSV missing
 DEFAULT_END_DATE = date.today()
@@ -64,11 +63,7 @@ def _storage_filename(symbol: str) -> str:
     return symbol.replace("^", "").replace("=", "_")
 
 
-def _cache_path(symbol: str) -> Path:
-    return DATA_CACHE_DIR / f"{_storage_filename(symbol)}.csv"
-
-
-def _read_price_csv(path: Path, symbol: str) -> pd.Series | None:
+def _read_price_csv(path, symbol: str) -> pd.Series | None:
     if not path.exists():
         return None
     frame = pd.read_csv(path, index_col=0, parse_dates=True)
@@ -82,26 +77,9 @@ def _load_bundled_series(symbol: str) -> pd.Series | None:
     return _read_price_csv(DATA_DIR / f"{_storage_filename(symbol)}.csv", symbol)
 
 
-def _load_cached_series(symbol: str) -> pd.Series | None:
-    return _read_price_csv(_cache_path(symbol), symbol)
-
-
-def _load_stored_series(symbol: str) -> pd.Series | None:
-    """Load the widest available price series from bundled data and cache."""
-    series_parts: list[pd.Series] = []
-    for loader in (_load_bundled_series, _load_cached_series):
-        part = loader(symbol)
-        if part is not None:
-            series_parts.append(part)
-    if not series_parts:
-        return None
-    combined = pd.concat(series_parts).sort_index()
-    return combined[~combined.index.duplicated(keep="last")]
-
-
 def _merge_live_and_stored(symbol: str, live: pd.Series | None) -> pd.Series:
-    """Combine stored history with live prices; live wins on overlapping dates."""
-    stored = _load_stored_series(symbol)
+    """Combine bundled history with this run's live prices; live wins on overlapping dates."""
+    stored = _load_bundled_series(symbol)
     parts: list[pd.Series] = []
     if stored is not None:
         parts.append(stored)
@@ -114,37 +92,28 @@ def _merge_live_and_stored(symbol: str, live: pd.Series | None) -> pd.Series:
 
 
 def get_available_date_bounds(symbol: str) -> tuple[date, date] | None:
-    """Return the earliest and latest dates available for a symbol."""
+    """Return the earliest and latest dates in the bundled CSV for a symbol."""
     bundled = _load_bundled_series(symbol)
-    cached = _load_cached_series(symbol)
-
-    if bundled is None and cached is None:
+    if bundled is None or bundled.empty:
         return None
-
-    # Bundled CSV holds full history; cache may only contain recent Yahoo fetches (~2007+).
-    if bundled is not None:
-        earliest = bundled.index.min().date()
-    else:
-        earliest = cached.index.min().date()
-
-    latest_candidates = [
-        s.index.max().date()
-        for s in (bundled, cached)
-        if s is not None and not s.empty
-    ]
-    latest = max(latest_candidates) if latest_candidates else DEFAULT_END_DATE
-    return earliest, latest
+    return bundled.index.min().date(), bundled.index.max().date()
 
 
-def _merge_cache(symbol: str, close_series: pd.Series) -> None:
-    path = _cache_path(symbol)
-    cache_frame = close_series.rename("Close").to_frame()
-    if path.exists():
-        existing = pd.read_csv(path, index_col=0, parse_dates=True)
-        existing.index = existing.index.tz_localize(None)
-        cache_frame = pd.concat([existing, cache_frame]).sort_index()
-        cache_frame = cache_frame[~cache_frame.index.duplicated(keep="last")]
-    cache_frame.to_csv(path)
+def _live_fetch_start(symbols: Tuple[str, ...], requested_start: date, requested_end: date) -> date | None:
+    """Earliest date to request live. Skip the network if the bundled CSV already covers `requested_end`."""
+    starts: list[date] = []
+    for symbol in symbols:
+        bounds = get_available_date_bounds(symbol)
+        if bounds is None:
+            starts.append(requested_start)
+            continue
+        stored_latest = bounds[1]
+        if stored_latest >= requested_end:
+            continue
+        starts.append(max(requested_start, stored_latest))
+    if not starts:
+        return None
+    return min(starts)
 
 
 @st.cache_data(show_spinner=False, ttl=60 * 60)
@@ -181,9 +150,8 @@ def _fetch_live_prices(
             if series.empty:
                 continue
             frames.append(series.rename(symbol))
-            _merge_cache(symbol, series)
     except Exception:
-        # Network or Yahoo errors must not crash the page; callers fall back to disk.
+        # Network or Yahoo errors must not crash the page; callers fall back to bundled CSVs.
         frames = []
 
     if not frames:
@@ -203,7 +171,6 @@ def _fetch_live_prices(
             if series.empty:
                 continue
             frames.append(series.rename(symbol))
-            _merge_cache(symbol, series)
 
     if not frames:
         return pd.DataFrame()
@@ -233,13 +200,6 @@ def _fetch_live_fred(
         frame = frame.to_frame(name=series_ids[0])
 
     frame.index = pd.to_datetime(frame.index).tz_localize(None)
-    for series_id in series_ids:
-        if series_id not in frame.columns:
-            continue
-        series = pd.to_numeric(frame[series_id], errors="coerce").dropna()
-        if series.empty:
-            continue
-        _merge_cache(series_id, series)
     return frame
 
 
@@ -250,13 +210,20 @@ def download_fred_data(
     *,
     use_live: bool = True,
 ) -> pd.DataFrame:
-    """Fetch FRED yields, then fall back to cache and bundled CSVs."""
+    """Fetch FRED yields and merge them with bundled CSVs for this run only.
+
+    Live requests start at the latest bundled date, not the chart window start.
+    Bundled files in `data/` are never rewritten.
+    """
     if not series_ids:
         return pd.DataFrame()
 
     series_ids = tuple(series_ids)
+    live_start = _live_fetch_start(series_ids, start_date, end_date) if use_live else None
     live_frame = (
-        _fetch_live_fred(series_ids, start_date, end_date) if use_live else pd.DataFrame()
+        _fetch_live_fred(series_ids, live_start, end_date)
+        if live_start is not None
+        else pd.DataFrame()
     )
     merged_frames: list[pd.Series] = []
 
@@ -285,13 +252,22 @@ def download_data(
     *,
     use_live: bool = True,
 ) -> pd.DataFrame:
-    """Fetch prices via Yahoo Finance, then fall back to cache and bundled CSVs."""
+    """Fetch prices via Yahoo Finance and merge them with bundled CSVs for this run only.
+
+    Live requests start at the latest bundled date, not the chart window start.
+    Bundled files in `data/` are never rewritten.
+    """
     if not tickers:
         return pd.DataFrame()
 
     tickers = tuple(tickers)
     merged_frames: list[pd.Series] = []
-    live_frame = _fetch_live_prices(tickers, start_date, end_date) if use_live else pd.DataFrame()
+    live_start = _live_fetch_start(tickers, start_date, end_date) if use_live else None
+    live_frame = (
+        _fetch_live_prices(tickers, live_start, end_date)
+        if live_start is not None
+        else pd.DataFrame()
+    )
 
     for symbol in tickers:
         live_series = live_frame[symbol] if symbol in live_frame.columns else None

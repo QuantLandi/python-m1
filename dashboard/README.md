@@ -62,14 +62,13 @@ See [BUILD_PLAN.md](BUILD_PLAN.md) for the full instructor build plan.
 | Path | Purpose |
 |------|---------|
 | `dashboard.py` | Entry point — Streamlit navigation |
-| `views/common.py` | Shared loaders, caching, lookback and chart helpers |
+| `views/common.py` | Shared loaders, lookback and chart helpers |
 | `tests/` | Smoke tests for loaders and date helpers |
 | `views/equities.py` | Stocks tab (S&P 500 snapshot) |
 | `views/bonds.py` | Bonds tab (Treasury curve + OECD 10Y) |
 | `views/commodities.py` | Commodities tab |
 | `views/currencies.py` | Currencies tab |
 | `data/` | Bundled CSV fallbacks (S&P 500 + FRED yields) |
-| `data_cache/` | Auto-generated cache (not committed) |
 | `.streamlit/config.toml` | Dark theme and styling |
 
 ## AI policy

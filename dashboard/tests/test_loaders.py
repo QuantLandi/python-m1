@@ -51,8 +51,6 @@ def test_date_range_error() -> None:
 
 def test_offline_csv_load(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr("views.common.DATA_DIR", tmp_path)
-    monkeypatch.setattr("views.common.DATA_CACHE_DIR", tmp_path / "cache")
-    (tmp_path / "cache").mkdir()
 
     csv_path = tmp_path / "GSPC.csv"
     pd.DataFrame(
@@ -65,3 +63,28 @@ def test_offline_csv_load(tmp_path, monkeypatch) -> None:
 
     prices = download_data(("^GSPC",), date(2020, 1, 2), date(2020, 1, 6), use_live=False)
     assert list(prices["^GSPC"]) == [100.0, 101.0, 102.0]
+
+
+def test_live_fetch_starts_at_latest_stored_date(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr("views.common.DATA_DIR", tmp_path)
+
+    pd.DataFrame(
+        {"Close": [4.0, 4.1]},
+        index=pd.to_datetime(["2024-01-02", "2024-06-14"]),
+    ).to_csv(tmp_path / "DGS10.csv")
+
+    captured: dict[str, date] = {}
+
+    def fake_fred(series_ids, start, end):
+        captured["start"] = start
+        captured["end"] = end
+        return pd.DataFrame()
+
+    monkeypatch.setattr("views.common._fetch_live_fred", fake_fred)
+    download_fred_data(("DGS10",), date(1962, 1, 2), date(2024, 12, 31), use_live=True)
+    assert captured["start"] == date(2024, 6, 14)
+    assert captured["end"] == date(2024, 12, 31)
+
+    captured.clear()
+    download_fred_data(("DGS10",), date(1962, 1, 2), date(2024, 6, 14), use_live=True)
+    assert captured == {}

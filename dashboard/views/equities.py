@@ -5,8 +5,6 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from views.common import (
-    DATA_CACHE_DIR,
-    DATA_DIR,
     DEFAULT_END_DATE,
     DEFAULT_START_DATE,
     LOOKBACK_YEARS,
@@ -19,7 +17,6 @@ from views.common import (
 )
 
 SP500_TICKER = "^GSPC"
-SP500_BUNDLED_FILE = "GSPC.csv"
 
 
 def _simple_return(last: float, base: float) -> float | None:
@@ -214,9 +211,11 @@ def render() -> None:
         st.warning("No observations in the selected date range.")
         return
 
-    cache_file = DATA_CACHE_DIR / SP500_BUNDLED_FILE
-    bundled_file = DATA_DIR / SP500_BUNDLED_FILE
-    if not cache_file.exists() and bundled_file.exists():
+    bundled_latest = get_available_date_bounds(SP500_TICKER)
+    if (
+        bundled_latest is not None
+        and prices.index[-1].date() <= bundled_latest[1] < end_date
+    ):
         st.info("Showing bundled S&P 500 data (live Yahoo Finance fetch unavailable).")
 
     st.sidebar.caption(f"Last updated: {prices.index[-1].strftime('%Y-%m-%d')}")

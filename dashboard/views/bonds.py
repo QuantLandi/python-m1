@@ -73,7 +73,7 @@ def _latest_snapshot(frame: pd.DataFrame) -> tuple[pd.Timestamp, pd.Series] | No
 
 
 def _earliest_yield_date() -> date:
-    """Allow the OECD 10Y start (1953); cached DGS10 must not raise the floor."""
+    """Allow the OECD 10Y start (1953); bundled DGS10 must not raise the floor."""
     starts = [FRED_EARLIEST]
     for series_id in ALL_FRED_IDS:
         bounds = get_available_date_bounds(series_id)

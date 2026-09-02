@@ -41,7 +41,6 @@ python-m1/                          # instructor repo
     ├── dashboard.py
     ├── views/
     ├── data/                       # bundled GSPC + FRED CSVs
-    ├── data_cache/                 # gitignored
     ├── .streamlit/
     └── tests/
 ```
@@ -60,13 +59,12 @@ uv run streamlit run dashboard.py
 | Component | File(s) | Done when |
 |-----------|---------|-----------|
 | App shell | `dashboard.py` | 4-tab `st.navigation` works |
-| Shared layer | `views/common.py` | Loaders, cache, regime engine, Plotly helpers |
+| Shared layer | `views/common.py` | Loaders, regime engine, Plotly helpers |
 | Stocks tab | `views/equities.py` | S&P 500 levels + trailing/calendar returns (scope frozen; see below) |
 | Bonds tab | `views/bonds.py` | US Treasury curve + OECD 10Y (pandas_datareader / FRED; scope frozen) |
 | Commodities tab | `views/commodities.py` | Metals, energy, grains charts |
 | Currencies tab | `views/currencies.py` | FX pairs + correlation heatmap |
 | Offline fallback | `data/` | Stocks + bonds work without internet (`GSPC.csv`, FRED series) |
-| Cache | `data_cache/` | Live fetches persist between runs |
 | Theme | `.streamlit/config.toml` | Dark theme, orange accent |
 | Tests | `tests/test_loaders.py` | Smoke tests on core helpers |
 | Deploy | Streamlit Cloud | Public URL |
@@ -88,7 +86,7 @@ Build in **6 phases**. Each phase ends with something runnable or testable.
 | `views/equities.py` … `currencies.py` | `render()` with header + placeholder |
 | `views/common.py` | Empty module + docstring listing planned functions |
 | `.streamlit/config.toml` | Dark theme, orange accent |
-| `.gitignore` | `data_cache/`, `__pycache__/`, `.env` |
+| `.gitignore` | `__pycache__/`, `.env` |
 | `README.md` | Acknowledgement, setup, launch command, milestone checklist |
 
 **Exit criterion:** `uv run streamlit run dashboard.py` — clicking each tab switches pages.
@@ -99,12 +97,12 @@ Build in **6 phases**. Each phase ends with something runnable or testable.
 
 ### Phase 1 — Data pipeline
 
-**Goal:** one function fetches live prices and caches to disk.
+**Goal:** one function fetches live prices and merges them in memory with bundled CSVs.
 
 Implement in `views/common.py`, in order:
 
-1. `DATA_CACHE_DIR`, `_cache_path()`
-2. `download_data(tickers, start, end)` — `yfinance` + CSV cache merge
+1. `DATA_DIR`, `_load_bundled_series()`
+2. `download_data(tickers, start, end)` — `yfinance` tail from the latest bundled date; do not write `data/`
 3. `preprocess()`
 4. Shared `lookback_start()` / `date_range_error()` / `chart_layout()`
 
@@ -158,7 +156,7 @@ In `views/common.py`:
 
 Uses `pandas_datareader` (`DataReader(..., "fred")`) — **no FRED API key**.
 
-1. `download_fred_data()` in `views/common.py` — same cache/bundled fallback as Yahoo prices
+1. `download_fred_data()` in `views/common.py` — same bundled CSV fallback as Yahoo prices
 2. Four charts only:
    - latest OECD 10Y bar chart
    - latest US Treasury curve by tenor
@@ -168,7 +166,7 @@ Uses `pandas_datareader` (`DataReader(..., "fred")`) — **no FRED API key**.
 
 **Out of scope:** series multiselect, top movers, spreads, vol surface, correlation, CSV download, regime overlay, FRED API key.
 
-**Exit criterion:** all four charts render from live FRED; bundled `data/DGS*.csv` and `data/IRLTLT01*.csv` cover offline; cache works on a second run.
+**Exit criterion:** all four charts render from live FRED; bundled `data/DGS*.csv` and `data/IRLTLT01*.csv` cover offline.
 
 **Session:** 10.
 
@@ -301,17 +299,16 @@ by Enes SAHIN. We reuse the overall architecture and design patterns; implementa
 | Reference too large for beginners | Equities stays a slim S&P 500 view; richer analytics live on other tabs |
 | AI-generated submissions | Ungraded + MCQ + live demo (explain one function) |
 | FRED key friction | Use `pandas_datareader` public FRED feed (no key) |
-| yfinance / FRED outages | Bundled `data/` (GSPC + FRED) + `data_cache/` fallback |
+| yfinance / FRED outages | Bundled `data/` (GSPC + FRED) |
 | Deploy failures on session 12 | Front-load deploy walkthrough; troubleshoot in room |
 
 ---
 
 ## Repo hygiene
 
-- Root `.gitignore`: add `dashboard/data_cache/`
 - Update `syllabus.md`: replace two-track paragraph with single project + link to `dashboard/README.md`
 - Update root `README.md`: one row pointing to `dashboard/`
-- Never commit live cache files
+- Commit `data/` seeds; never rewrite them at runtime
 
 ---
 

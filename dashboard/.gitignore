@@ -3,7 +3,5 @@ __pycache__/
 *.py[cod]
 .venv/
 
-# Secrets and local cache
+# Secrets
 .env
-data_cache/*
-!data_cache/.gitkeep
