@@ -24,18 +24,23 @@ def render() -> None:
     default_start = max(DEFAULT_START_DATE, DEFAULT_END_DATE - timedelta(days=DEFAULT_LOOKBACK_DAYS))
 
     with st.sidebar:
-        date_range = st.date_input(
-            "Date range",
-            value=(default_start, DEFAULT_END_DATE),
+        start_date = st.date_input(
+            "Start date",
+            value=default_start,
+            min_value=DEFAULT_START_DATE,
+            max_value=DEFAULT_END_DATE,
+        )
+        end_date = st.date_input(
+            "End date",
+            value=DEFAULT_END_DATE,
             min_value=DEFAULT_START_DATE,
             max_value=DEFAULT_END_DATE,
         )
 
-    if not isinstance(date_range, (tuple, list)) or len(date_range) != 2:
-        st.warning("Please select both a start and an end date.")
+    if start_date > end_date:
+        st.warning("Start date must be on or before the end date.")
         return
 
-    start_date, end_date = sorted(date_range)
     if start_date == end_date:
         st.warning("Date range must span at least two distinct dates.")
         return
