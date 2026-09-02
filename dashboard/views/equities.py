@@ -23,6 +23,8 @@ def render() -> None:
     st.caption("Integrated stock analytics covering flagship single names.")
 
     bounds = get_available_date_bounds(SP500_TICKER)
+    if bounds is None:
+        st.sidebar.warning("Bundled S&P 500 history file missing — date range may be limited.")
     earliest_date = bounds[0] if bounds else DEFAULT_START_DATE
     default_start = max(earliest_date, DEFAULT_END_DATE - timedelta(days=DEFAULT_LOOKBACK_DAYS))
 

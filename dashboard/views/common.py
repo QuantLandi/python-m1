@@ -15,7 +15,7 @@ DATA_CACHE_DIR = APP_DIR / "data_cache"
 DATA_DIR = APP_DIR / "data"
 DATA_CACHE_DIR.mkdir(exist_ok=True)
 
-DEFAULT_START_DATE = date(2010, 1, 1)  # fallback when no stored series exists
+DEFAULT_START_DATE = date(1927, 12, 30)  # ^GSPC bundled history start; used if CSV missing
 DEFAULT_END_DATE = date.today()
 
 
