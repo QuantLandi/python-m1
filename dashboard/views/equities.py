@@ -69,10 +69,23 @@ def _since_return(series: pd.Series, period_start: pd.Timestamp) -> float | None
     return _simple_return(window.iloc[-1], window.iloc[0])
 
 
+# Okabe–Ito palette: readable with red–green colour blindness (signs stay in the text too).
+RETURN_COLOR_POSITIVE = "#56B4E9"
+RETURN_COLOR_NEGATIVE = "#D55E00"
+RETURN_COLOR_NEUTRAL = "#FFFFFF"
+
+
 def _format_return(value: float | None) -> str:
     if value is None:
         return "—"
-    return f"{value:+.1%}"
+    text = f"{value:+.1%}"
+    if abs(value) < 0.0005:
+        color = RETURN_COLOR_NEUTRAL
+    elif value > 0:
+        color = RETURN_COLOR_POSITIVE
+    else:
+        color = RETURN_COLOR_NEGATIVE
+    return f'<span style="color:{color}">{text}</span>'
 
 
 RETURNS_TABLE_CSS = """
@@ -104,7 +117,13 @@ table.returns-table td {
 
 
 def _show_returns_table(frame: pd.DataFrame) -> None:
-    html = frame.to_html(index=False, classes="returns-table", border=0, justify="center")
+    html = frame.to_html(
+        index=False,
+        classes="returns-table",
+        border=0,
+        justify="center",
+        escape=False,
+    )
     st.markdown(html, unsafe_allow_html=True)
 
 
