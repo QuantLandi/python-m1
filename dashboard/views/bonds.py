@@ -169,6 +169,30 @@ def render() -> None:
     if not selected_oecd_ids:
         st.info("Select at least one OECD country to display 10-year yields.")
     else:
+        oecd_latest = latest.reindex(selected_oecd_ids).dropna().sort_values()
+        if oecd_latest.empty:
+            st.info("OECD 10Y yield snapshot unavailable.")
+        else:
+            labels = [oecd_labels[series_id] for series_id in oecd_latest.index]
+            fig = go.Figure(
+                data=[
+                    go.Bar(
+                        x=labels,
+                        y=oecd_latest.astype(float),
+                        marker=dict(color=_orange_gradient(len(oecd_latest))),
+                        hovertemplate="%{x}: %{y:.2f}%<extra></extra>",
+                    )
+                ]
+            )
+            fig.update_layout(
+                title=f"OECD 10-year yields snapshot ({as_of_text})",
+                yaxis_title="Yield (%)",
+                height=420,
+                template="plotly_white",
+                margin=dict(t=60, b=40),
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
         oecd_history = yields[
             [col for col in selected_oecd_ids if col in yields.columns]
         ].dropna(how="all")
@@ -222,7 +246,7 @@ def render() -> None:
             ]
         )
         fig.update_layout(
-            title=f"U.S. Treasury curve ({as_of_text})",
+            title=f"U.S. Treasury yield curve snapshot ({as_of_text})",
             xaxis_title="Tenor",
             yaxis_title="Yield (%)",
             xaxis=dict(type="category", dtick=1),
@@ -231,31 +255,6 @@ def render() -> None:
             margin=dict(t=60, b=40),
         )
         st.plotly_chart(fig, use_container_width=True)
-
-    if selected_oecd_ids:
-        oecd_latest = latest.reindex(selected_oecd_ids).dropna().sort_values()
-        if oecd_latest.empty:
-            st.info("OECD 10Y yield snapshot unavailable.")
-        else:
-            labels = [oecd_labels[series_id] for series_id in oecd_latest.index]
-            fig = go.Figure(
-                data=[
-                    go.Bar(
-                        x=labels,
-                        y=oecd_latest.astype(float),
-                        marker=dict(color=_orange_gradient(len(oecd_latest))),
-                        hovertemplate="%{x}: %{y:.2f}%<extra></extra>",
-                    )
-                ]
-            )
-            fig.update_layout(
-                title=f"OECD 10-year yields ({as_of_text})",
-                yaxis_title="Yield (%)",
-                height=420,
-                template="plotly_white",
-                margin=dict(t=60, b=40),
-            )
-            st.plotly_chart(fig, use_container_width=True)
 
     treasury_history = yields[
         [col for col in treasury_ids if col in yields.columns]
@@ -275,7 +274,7 @@ def render() -> None:
                 )
             )
         fig.update_layout(
-            title="U.S. Treasury yields over time",
+            title="U.S. Treasury yield curve over time",
             yaxis_title="Yield (%)",
             xaxis_title="Date",
             height=420,
