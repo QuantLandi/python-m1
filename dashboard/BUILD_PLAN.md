@@ -4,6 +4,8 @@ Private instructor plan for the M1 project deliverable. Students receive a separ
 
 **Model:** inspired by [market_dashboard](https://github.com/enesdesahin/market_dashboard) by Enes SAHIN (cite in student README).
 
+**Status (instructor copy):** the reference dashboard is **complete**. Do not add regime overlays, FX heatmaps, or extra Enes-style analytics. Remaining work is teaching (student template, syllabus link, MCQ items), not product.
+
 ---
 
 ## Assessment & constraints
@@ -13,7 +15,7 @@ Private instructor plan for the M1 project deliverable. Students receive a separ
 | Grading | **Not graded** — accountability via **MCQ final** (project-specific code-reading questions) |
 | Work mode | **Individual**; same brief for Lille & Sophia |
 | Demo | **Mandatory** live demo in session 12 (2–3 min) |
-| Scope | **4 tabs** (Stocks, Bonds, Commodities, Currencies) + **regime overlays** |
+| Scope | **4 tabs** (Stocks, Bonds, Commodities, Currencies). **No regime overlays.** |
 | Data | Live `yfinance` + **FRED via pandas_datareader** (no API key); bundled `data/` CSV fallbacks |
 | Deploy | **Streamlit Cloud** (public URL) |
 | AI policy | Same as course README — OK if you can explain every line |
@@ -40,7 +42,7 @@ python-m1/                          # instructor repo
     ├── README.md                   # student brief + milestones
     ├── dashboard.py
     ├── views/
-    ├── data/                       # bundled GSPC + FRED CSVs
+    ├── data/                       # bundled GSPC, FRED, futures, FX CSVs
     ├── .streamlit/
     └── tests/
 ```
@@ -59,21 +61,21 @@ uv run streamlit run dashboard.py
 | Component | File(s) | Done when |
 |-----------|---------|-----------|
 | App shell | `dashboard.py` | 4-tab `st.navigation` works |
-| Shared layer | `views/common.py` | Loaders, Plotly helpers, shared return tables (regime engine still deferred) |
-| Stocks tab | `views/equities.py` | S&P 500 levels + trailing/calendar returns (scope frozen; see below) |
-| Bonds tab | `views/bonds.py` | US Treasury curve + OECD 10Y (pandas_datareader / FRED; scope frozen) |
-| Commodities tab | `views/commodities.py` | Futures universe, trailing/calendar tables + 4×1 bar grids (scope frozen) |
-| Currencies tab | `views/currencies.py` | FX pairs + correlation heatmap |
-| Offline fallback | `data/` | Stocks, bonds, and commodities work without internet (`GSPC.csv`, FRED series, futures CSVs) |
+| Shared layer | `views/common.py` | Loaders, Plotly helpers, shared return tables |
+| Stocks tab | `views/equities.py` | S&P 500 levels + trailing/calendar returns (scope frozen) |
+| Bonds tab | `views/bonds.py` | US Treasury curve + OECD 10Y; OECD/tenor filters on history (scope frozen) |
+| Commodities tab | `views/commodities.py` | Futures universe, per-name return tables + two 2×2 bar grids (scope frozen) |
+| Currencies tab | `views/currencies.py` | G8 spot-cross matrix + selected pair path (scope frozen) |
+| Offline fallback | `data/` | All four tabs work without internet (GSPC, FRED, futures, FX USD-leg CSVs) |
 | Theme | `.streamlit/config.toml` | Dark theme, orange accent |
-| Tests | `tests/test_loaders.py` | Smoke tests on core helpers |
+| Tests | `tests/test_loaders.py` | Smoke tests on loaders, dates, FX matrix helpers |
 | Deploy | Streamlit Cloud | Public URL |
 
 ---
 
 ## Implementation phases
 
-Build in **6 phases**. Each phase ends with something runnable or testable.
+Build in **6 product phases** (Phase 3 dropped). Each phase ends with something runnable or testable.
 
 ### Phase 0 — Scaffold
 
@@ -124,7 +126,7 @@ The Stocks tab is an **index snapshot**, not a relative-performance dashboard:
 4. One Plotly **index-level** chart (not normalized multi-asset)
 5. Fetch extra history so 1-year trailing metrics still work on a short chart window
 
-**Out of scope** (reference repo only; do not implement): ticker multiselect, Top Gainers, normalized overlay, rolling vol / drawdown tabs, correlation heatmap, Sharpe table, CSV download, regime toggle on this tab.
+**Out of scope** (reference repo only; do not implement): ticker multiselect, Top Gainers, normalized overlay, rolling vol / drawdown tabs, correlation heatmap, Sharpe table, CSV download, regime toggle.
 
 **Exit criterion:** lookback + date range drive the chart; both return tables render; bundled fallback works if Yahoo is down.
 
@@ -132,21 +134,11 @@ The Stocks tab is an **index snapshot**, not a relative-performance dashboard:
 
 ---
 
-### Phase 3 — Regime engine
+### Phase 3 — Regime engine (dropped)
 
-**Goal:** macro overlays on the currencies tab (equities, bonds, and commodities stay overlay-free).
+**Not in the student brief.** Macro regime classification, chart shading, and sidebar badges were considered for Currencies only and **will not be built**. Equities, bonds, commodities, and currencies stay overlay-free.
 
-In `views/common.py`:
-
-1. `REGIME_COLORS`, `REGIME_ACCENTS`, `REGIME_DESCRIPTIONS`
-2. `classify_regime(growth, inflation, vol)`
-3. `get_market_regime_data()` — ^GSPC, ^VIX, CL=F proxies
-4. `add_regime_shading()`, `render_regime_status_panel()`, `render_regime_legend()`
-5. Wire regime toggle on **currencies** (not equities, bonds, or commodities)
-
-**Exit criterion:** toggle on → shaded chart + regime badge in sidebar on the currencies tab.
-
-**Session:** 11 (with FX) — deferred until the currencies tab exists. Commodities has no price path to shade.
+Do not add `classify_regime`, `add_regime_shading`, or related helpers.
 
 ---
 
@@ -157,14 +149,14 @@ In `views/common.py`:
 Uses `pandas_datareader` (`DataReader(..., "fred")`) — **no FRED API key**.
 
 1. `download_fred_data()` in `views/common.py` — same bundled CSV fallback as Yahoo prices
-2. Four charts only:
+2. Four charts:
    - latest OECD 10Y bar chart
-   - latest US Treasury curve by tenor
-   - OECD 10Y history
-   - US Treasury history
+   - latest US Treasury curve by tenor (full curve; not filtered)
+   - OECD 10Y history (countries from sidebar multiselect, default all)
+   - US Treasury history (tenors from sidebar multiselect; default 3M / 2Y / 10Y / 30Y)
 3. Sidebar lookback + start/end dates (keys prefixed `bonds_` so they do not clash with Stocks)
 
-**Out of scope:** series multiselect, top movers, spreads, vol surface, correlation, CSV download, regime overlay, FRED API key.
+**Out of scope:** top movers, spreads, vol surface, correlation, CSV download, regime overlay, FRED API key.
 
 **Exit criterion:** all four charts render from live FRED; bundled `data/DGS*.csv` and `data/IRLTLT01*.csv` cover offline.
 
@@ -183,20 +175,26 @@ A **futures returns snapshot**, not a price-path dashboard (and not Enes’ vol 
 1. Universe: metals (`GC=F`, `SI=F`, `HG=F`), energy (`CL=F`, `BZ=F`, `NG=F`), grains (`ZW=F`, `ZC=F`)
 2. Sidebar: lookback + start/end (`commodities_` keys) and a multiselect (**default: all**)
 3. Shared trailing (7d / 30d / 90d / 1y) and calendar (WTD / MTD / QTD / YTD) tables **per selected name**
-4. Two **4×1** Plotly bar grids (all selected names on each horizon): trailing, then calendar
+4. Two **2×2** Plotly bar grids (all selected names on each of the four horizons): trailing, then calendar
 5. Live `yfinance` via `download_data`; bundled `data/*_F.csv` fallback (Yahoo is often blocked on Streamlit Cloud)
 
 **Out of scope:** indexed/level time-series by group, Top Gainers, rolling vol / drawdown, correlation heatmap, Sharpe table, CSV download, regime overlay.
 
 **Exit criterion:** multiselect drives tables and both bar grids; Cloud still renders from bundled CSVs when Yahoo fails.
 
-#### Currencies (remaining)
+#### Currencies (scope frozen)
 
-1. `currencies.py` — FX pairs, normalized scores, correlation heatmap
-2. Reuse `common.py` helpers (no duplicated download logic)
-3. Regime overlay optional here (Phase 3), not on equities / bonds / commodities
+G8 **spot-cross matrix**, not a heatmap or indexed-score dashboard.
 
-**Exit criterion:** all 4 tabs functional with live data (commodities already done).
+1. Universe: USD, EUR, GBP, JPY, CHF, AUD, CAD, NZD via Yahoo USD legs (`EURUSD=X`, `USDJPY=X`, …)
+2. Implied crosses: convert each leg to USD-per-unit, then `row/col` = units of column per 1 unit of row
+3. Clickable matrix + numerator/denominator selectboxes drive one Plotly pair path
+4. Sidebar lookback + start/end (`currencies_` keys)
+5. Reuse `download_data` / `preprocess`; bundled `data/*_X.csv` fallback
+
+**Out of scope:** correlation heatmap, normalized multi-pair overlay, regime overlay, extra crosses beyond the G8 USD-leg set.
+
+**Exit criterion:** matrix and pair chart render live; Cloud still renders from bundled FX CSVs when Yahoo fails.
 
 **Session:** 11.
 
@@ -204,9 +202,9 @@ A **futures returns snapshot**, not a price-path dashboard (and not Enes’ vol 
 
 ### Phase 6 — Tests, polish, deploy
 
-1. `tests/test_loaders.py` — smoke tests on `preprocess`, disk fallback, date helpers
+1. `tests/test_loaders.py` — smoke tests on `preprocess`, disk fallback, date helpers, FX `usd_per_unit` / `spot_cross_matrix` / `pair_rate`
 2. `.streamlit/config.toml` — dark theme, orange accent (no custom font bundle)
-3. Bundled `data/` CSVs: `GSPC.csv`, commodity futures (`GC_F.csv`, …), plus all Treasury (`DGS*`) and OECD 10Y (`IRLTLT01*`) series
+3. Bundled `data/` CSVs: `GSPC.csv`, commodity futures (`GC_F.csv`, …), Treasury (`DGS*`), OECD 10Y (`IRLTLT01*`), FX USD legs (`EURUSD_X.csv`, …)
 4. Streamlit Cloud deploy
 5. README: deploy steps + demo checklist
 
@@ -222,13 +220,12 @@ A **futures returns snapshot**, not a price-path dashboard (and not Enes’ vol 
 Phase 0 (scaffold)
     → Phase 1 (data pipeline)
         → Phase 2 (equities)
-            → Phase 3 (regime)
-                → Phase 4 (bonds)
-                → Phase 5 (commodities frozen; FX remaining)   ← can parallelise after Phase 3
-                    → Phase 6 (deploy)
+            → Phase 4 (bonds)
+            → Phase 5 (commodities + currencies)   ← can overlap
+                → Phase 6 (deploy)
 ```
 
-Phases 4 and 5 can overlap once Phase 3 is done.
+Phase 3 is omitted.
 
 ---
 
@@ -239,7 +236,7 @@ Phases 4 and 5 can overlap once Phase 3 is done.
 | 8 | 0, 1 | App runs; equities shows one live chart |
 | 9 | 2 | Equities tab complete (S&P 500 snapshot) |
 | 10 | 4 | Bonds tab |
-| 11 | 3, 5 | Currencies tab; regime overlay on FX if time |
+| 11 | 5 | Commodities + Currencies tabs |
 | 12 | 6 | Deployed app + live demos |
 
 Assume **30–60 min prep** before each session (linked from `README.md`).
@@ -250,8 +247,8 @@ Assume **30–60 min prep** before each session (linked from `README.md`).
 
 | | Student template repo | Instructor `dashboard/` |
 |--|----------------------|-------------------------|
-| Phase 0 | Scaffold with stubs only | Build here first |
-| Phases 1–6 | Students implement | Reference solution |
+| Phase 0 | Scaffold with stubs only | Built first; **reference solution complete** |
+| Phases 1–6 | Students implement | Do not keep expanding the product |
 | `project/session-plans/` | Not included | Per-session teaching notes |
 | `project/mcq/` | Not included | Draft final exam items |
 | `BUILD_PLAN.md` | Not included | This file |
@@ -269,11 +266,11 @@ Aim for **8–12 questions** out of 40, same format as course quizzes (snippet +
 | pandas time series | `.pct_change()`, `.rolling()`, index slicing |
 | caching | `@st.cache_data`, behaviour on second run |
 | data loading | `yf.download` return shape, empty DataFrame handling |
-| functions | `classify_regime()` — trace branches |
-| regime logic | `add_regime_shading` loop |
+| FX crosses | `usd_per_unit` conventions; `spot_cross_matrix` inversion |
+| functions | `pair_rate` numerator / denominator |
 | mutations | `.ffill()` return vs in-place |
 
-Draft items in `project/mcq/project-final-items.md` during sessions 8–11. Run every snippet before adding.
+Draft items in `project/mcq/project-final-items.md` during sessions 8–11. Run every snippet before adding. Do **not** write items that assume a regime engine.
 
 ---
 
@@ -314,7 +311,7 @@ by Enes SAHIN. We reuse the overall architecture and design patterns; implementa
 | Reference too large for beginners | Equities stays a slim S&P 500 view; richer analytics live on other tabs |
 | AI-generated submissions | Ungraded + MCQ + live demo (explain one function) |
 | FRED key friction | Use `pandas_datareader` public FRED feed (no key) |
-| yfinance / FRED outages | Bundled `data/` (GSPC + futures `*_F.csv` + FRED); Cloud often cannot reach Yahoo |
+| yfinance / FRED outages | Bundled `data/` (GSPC + futures `*_F.csv` + FRED + FX `*_X.csv`); Cloud often cannot reach Yahoo |
 | Deploy failures on session 12 | Front-load deploy walkthrough; troubleshoot in room |
 
 ---
@@ -329,4 +326,4 @@ by Enes SAHIN. We reuse the overall architecture and design patterns; implementa
 
 ## Next step
 
-Implement **Phase 5 (Currencies)** — FX pairs, normalized scores, correlation heatmap (reuse `common.py`). Regime overlays (Phase 3) stay deferred until that tab exists; do not add them on commodities.
+Instructor product work is **done**. Next: Phase-0 student template, syllabus / root README links, and MCQ drafts in `project/mcq/` — not further dashboard features.

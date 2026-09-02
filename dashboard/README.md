@@ -26,6 +26,7 @@ From this folder:
 uv run pytest
 ```
 
+## Launch
 
 From this folder:
 
@@ -50,10 +51,10 @@ See [DEPLOY.md](DEPLOY.md). On Streamlit Community Cloud, set **Main file path**
 - [x] **Phase 0** — App shell with four navigable tabs
 - [x] **Phase 1** — Data pipeline in `views/common.py` (`download_data`, `preprocess`)
 - [x] **Phase 2** — Equities tab: S&P 500 levels, lookback, trailing and calendar returns (scope frozen)
-- [ ] **Phase 3** — Regime overlays and badges (deferred to currencies)
+- [x] **Phase 3** — Dropped (no regime overlays)
 - [x] **Phase 4** — Bonds tab: US curve + OECD 10Y (pandas_datareader / FRED; scope frozen)
-- [x] **Phase 5 (Commodities)** — Futures returns snapshot: tables + 4×1 bar grids (scope frozen)
-- [ ] **Phase 5 (Currencies)** — FX pairs and correlation heatmap
+- [x] **Phase 5 (Commodities)** — Futures returns snapshot: tables + 2×2 bar grids (scope frozen)
+- [x] **Phase 5 (Currencies)** — G8 spot-cross matrix and pair path (scope frozen)
 - [x] **Phase 6** — Tests, polish, Streamlit Cloud deploy
 
 See [BUILD_PLAN.md](BUILD_PLAN.md) for the full instructor build plan.
@@ -69,7 +70,7 @@ See [BUILD_PLAN.md](BUILD_PLAN.md) for the full instructor build plan.
 | `views/bonds.py` | Bonds tab (Treasury curve + OECD 10Y) |
 | `views/commodities.py` | Commodities tab (futures returns snapshot) |
 | `views/currencies.py` | Currencies tab |
-| `data/` | Bundled CSV fallbacks (S&P 500, commodity futures, FRED yields) |
+| `data/` | Bundled CSV fallbacks (S&P 500, commodity futures, FRED yields, FX USD legs) |
 | `.streamlit/config.toml` | Dark theme and styling |
 
 ## AI policy
