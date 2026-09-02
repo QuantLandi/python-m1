@@ -39,13 +39,13 @@ Yahoo Finance is often *blocked* on Cloud. The app must still render from CSVs. 
 
 == Walkthrough (follow the shared screen)
 
-1. Open #link("https://share.streamlit.io/")[share.streamlit.io] and sign in with GitHub.
-2. *Create app*.
-3. Repository: your fork (or the volunteer repo the instructor uses).
-4. Branch: `main` (unless you were told otherwise).
-5. *Main file path:* as above.
-6. Python: *3.12*.
-7. Deploy. Watch the *build log*. Red text about Yahoo is expected; a crash on *import* is not.
+- Open #link("https://share.streamlit.io/")[share.streamlit.io] and sign in with GitHub.
+- *Create app*.
+- Repository: your fork (or the volunteer repo the instructor uses).
+- Branch: `main` (unless you were told otherwise).
+- *Main file path:* as above.
+- Python: *3.12*.
+- Deploy. Watch the *build log*. Red text about Yahoo is expected; a crash on *import* is not.
 
 #note[
   No secrets. FRED uses the public `pandas_datareader` feed.
@@ -73,11 +73,11 @@ If Cloud is down, rehearse locally from the *repository root* (instructor course
 
 The final is *closed book*, snippet + true/false. Open *your* `views/common.py` and `views/equities.py`. With a neighbour, answer out loud:
 
-+ After `@st.cache_data` on `_fetch_live_prices`, does the second identical call hit Yahoo again within the TTL?
-+ Why is Yahoo's `end` one day after the last date we want on the chart?
-+ What does `preprocess` do if a column has a hole, then a value? (`.ffill()` then `.dropna()`)
-+ Why fetch `end_date - 365 days` even when the chart starts yesterday?
-+ Why must Bonds use `bonds_start_date` instead of `start_date`?
+- After `@st.cache_data` on `_fetch_live_prices`, does the second identical call hit Yahoo again within the TTL?
+- Why is Yahoo's `end` one day after the last date we want on the chart?
+- What does `preprocess` do if a column has a hole, then a value? (`.ffill()` then `.dropna()`)
+- Why fetch `end_date - 365 days` even when the chart starts yesterday?
+- Why must Bonds use `bonds_start_date` instead of `start_date`?
 
 If you built FX: what is the difference between `usd_quote` and `usd_base`?
 

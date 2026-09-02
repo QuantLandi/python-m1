@@ -13,7 +13,7 @@ Yields are not Yahoo prices. We use *FRED* through `pandas_datareader` (`DataRea
 
 If the network blocks FRED, bundled files `data/DGS*.csv` and `data/IRLTLT01*.csv` still plot. Same idea as `GSPC.csv`.
 
-== Step 1 --- FRED download in `views/common.py`
+== FRED download in `views/common.py`
 
 Add `import pandas_datareader.data as web` at the top of `common.py`.
 
@@ -73,7 +73,7 @@ def download_fred_data(
     return fetched.loc[mask]
 ```
 
-== Step 2 --- Series catalogues in `views/bonds.py`
+== Series catalogues in `views/bonds.py`
 
 Type the FRED ids with the instructor (Treasury tenors + OECD 10-year names). Keep `bonds_` prefixes on *all* sidebar keys.
 
@@ -150,7 +150,7 @@ def _earliest_yield_date() -> date:
     return min(starts)
 ```
 
-== Step 3 --- Sidebar and download
+== Sidebar and download
 
 Same lookback pattern as Stocks, but keys `bonds_lookback`, `bonds_start_date`, `bonds_end_date`.
 
@@ -162,20 +162,20 @@ if not yields.empty:
     yields = yields.ffill().dropna(how="all")
 ```
 
-== Step 4 --- Four charts (order)
+== Four charts
 
 Follow the projector. Sketch:
 
-+ *OECD 10Y snapshot* --- bar chart of the latest yield per selected country (`sort_values`).
-+ *OECD 10Y history* --- one line per selected country.
-+ *US Treasury curve snapshot* --- scatter+lines of tenor vs yield (sort by years).
-+ *US Treasury history* --- lines for selected tenors only.
+- *OECD 10Y snapshot* --- bar chart of the latest yield per selected country (`sort_values`).
+- *OECD 10Y history* --- one line per selected country.
+- *US Treasury curve snapshot* --- scatter+lines of tenor vs yield (sort by years).
+- *US Treasury history* --- lines for selected tenors only.
 
 Use `chart_layout(...)` and `st.plotly_chart(..., use_container_width=True)`.
 
 If the room is short on time: keep *one* snapshot and *one* history. Do not start Commodities until four charts work *or* the instructor says to stop.
 
-== Step 5 --- Commit
+== Commit
 
 #cmd("git add views/common.py views/bonds.py
 git commit -m \"session 10: bonds\"")

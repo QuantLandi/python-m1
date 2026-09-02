@@ -15,7 +15,7 @@ Start Streamlit from last week:
 
 No ticker search, no many stocks on one chart, no download button. One series: `^GSPC`.
 
-== Step 1 --- Date helpers in `views/common.py`
+== Date helpers in `views/common.py`
 
 Add near the top (after the imports), with `DEFAULT_END_DATE`:
 
@@ -53,7 +53,7 @@ def date_range_error(start_date: date, end_date: date) -> str | None:
   `except ValueError` handles 29 February minus one year in a non-leap year (for example 2024-02-29 $->$ 2023-02-28).
 ]
 
-== Step 2 --- Return tables in `views/common.py`
+== Return tables in `views/common.py`
 
 Add these functions. They will be reused on Commodities (stretch).
 
@@ -142,7 +142,7 @@ If `DataFrame.map` fails on an older pandas, use `.apply(lambda col: col.map(...
 
 The instructor version colours HTML tables. `st.dataframe` is enough if you can explain the return math.
 
-== Step 3 --- Sidebar on the Stocks page
+== Sidebar on the Stocks page
 
 Rewrite `render()` in `views/equities.py` so widgets live in `st.sidebar`. Widget *keys* (`lookback`, `start_date`, `end_date`) must be unique on this page.
 
@@ -254,13 +254,13 @@ def render() -> None:
 render()
 ```
 
-== Step 4 --- Check
+== Check
 
 - Changing Lookback to `5y` moves the start date.
 - Trailing *1-year* is not empty on a 1y chart (because `fetch_start` goes further back).
 - Invalid range (start after end) shows a warning, not a crash.
 
-== Step 5 --- Commit
+== Commit
 
 #cmd("git add views/common.py views/equities.py
 git commit -m \"session 9: equities snapshot\"")

@@ -15,7 +15,7 @@
 
 *Minimum path* (sessions 8--10): Stocks + Bonds. *Stretch* (session 11): Commodities, then Currencies. Nobody is behind if they skip stretch.
 
-== Step 1 --- Clone and install
+== Clone and install
 
 In a terminal:
 
@@ -25,7 +25,7 @@ uv sync")
 
 Windows: use PowerShell. If `uv` is not found, restart the terminal after installing uv.
 
-== Step 2 --- Launch Streamlit
+== Launch Streamlit
 
 #cmd("uv run streamlit run dashboard.py")
 
@@ -33,7 +33,7 @@ A browser tab opens. Use the *sidebar* to switch Stocks, Bonds, Commodities, Cur
 
 Save any Python file: Streamlit *reruns the whole script*. That is normal.
 
-== Step 3 --- How the app is wired
+== How the app is wired
 
 Open `dashboard.py`. You do *not* need to change it this week.
 
@@ -43,7 +43,7 @@ Open `dashboard.py`. You do *not* need to change it this week.
 
 Open `views/equities.py`. You should see a `render()` function and a call to `render()` at the bottom. Streamlit executes that file when Stocks is selected.
 
-== Step 4 --- Paths to bundled CSV files
+== Paths to bundled CSV files
 
 Create `paths.py` next to `dashboard.py` if it is not already there:
 
@@ -58,7 +58,7 @@ DATA_DIR = DASHBOARD_DIR / "data"
 
 Confirm `data/GSPC.csv` exists (bundled S&P 500 history). *Never overwrite files in `data/` from Python.* Live downloads merge *in memory* only.
 
-== Step 5 --- Shared loaders in `views/common.py`
+== Shared loaders in `views/common.py`
 
 Replace the stub with the helpers below (type with the instructor; do not paste blindly if you cannot explain a line).
 
@@ -222,7 +222,7 @@ def chart_layout(**kwargs) -> dict:
   `yf.download` uses an *exclusive* end date, so we pass `end_date + one day`. Yahoo often fails from university Wi-Fi or later from Cloud --- then `_merge_live_and_stored` still shows `GSPC.csv`.
 ]
 
-== Step 6 --- Stocks tab: one line chart
+== Stocks tab: one line chart
 
 In `views/equities.py`:
 
@@ -268,7 +268,7 @@ render()
 
 Reload the browser. You should see a line. If Yahoo is blocked, the line stops at the last date in `GSPC.csv` --- that still counts.
 
-== Step 7 --- Commit
+== Commit
 
 #cmd("git add views/common.py views/equities.py paths.py
 git commit -m \"session 8: S&P chart\"")

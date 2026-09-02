@@ -13,7 +13,7 @@ This session is *stretch*. If last week is incomplete, stay on Bonds (empty stat
 
 #cmd("uv run streamlit run dashboard.py")
 
-== Part A --- Commodities (first)
+== Commodities
 
 Universe (Yahoo futures):
 
@@ -29,9 +29,9 @@ Fetch extra history like Stocks (`end - 365 days`) so 1-year returns work.
 
 For each selected ticker that has a column in `prices`:
 
-1. `compute_return_metrics(prices[ticker])`
-2. `st.subheader` with the human name
-3. `render_return_metrics(...)`
+- `compute_return_metrics(prices[ticker])`
+- `st.subheader` with the human name
+- `render_return_metrics(...)`
 
 Then two *2×2* bar charts (trailing horizons, then calendar horizons). Each subplot is one horizon; bars are the selected names. Use `plotly.subplots.make_subplots(rows=2, cols=2, ...)`.
 
@@ -73,7 +73,7 @@ CALENDAR_HORIZONS = (
 
 No price-path line charts on this tab. No regime colours.
 
-== Part B --- Currencies (if Part A works)
+== Currencies
 
 G8: USD, EUR, GBP, JPY, CHF, AUD, CAD, NZD.
 

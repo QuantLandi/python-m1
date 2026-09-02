@@ -28,7 +28,7 @@
   )
   set text(size: 10.5pt)
   set par(justify: true, leading: 0.65em)
-  set heading(numbering: "1.1")
+  set heading(numbering: none)
   show heading.where(level: 1): set text(size: 14pt)
   show heading.where(level: 2): set text(size: 12pt)
   show raw.where(block: true): it => {
