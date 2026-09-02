@@ -90,9 +90,9 @@ def _render_return_metrics(prices: pd.Series) -> None:
         "1y": _trailing_return(prices, 365),
     }
     calendar = {
-        "WTD": _since_return(prices, week_start),
-        "MTD": _since_return(prices, month_start),
-        "YTD": _since_return(prices, year_start),
+        "Week to date": _since_return(prices, week_start),
+        "Month to date": _since_return(prices, month_start),
+        "Year to date": _since_return(prices, year_start),
     }
 
     trailing_table = pd.DataFrame(
