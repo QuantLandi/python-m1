@@ -7,7 +7,6 @@ import streamlit as st
 from views.common import (
     DEFAULT_END_DATE,
     LOOKBACK_YEARS,
-    RETURNS_TABLE_CSS,
     chart_layout,
     date_range_error,
     download_data,
@@ -92,6 +91,32 @@ def _format_rate(value: float, quote: str) -> str:
     return f"{value:,.4f}"
 
 
+def _selected_cell(event) -> tuple[str, str] | None:
+    """Return (row, column) from a Streamlit dataframe selection event."""
+    if event is None:
+        return None
+    selection = event["selection"] if isinstance(event, dict) else getattr(event, "selection", None)
+    if selection is None:
+        return None
+    cells = selection["cells"] if isinstance(selection, dict) else getattr(selection, "cells", None)
+    if not cells:
+        return None
+    row, column = cells[0]
+    return str(row), str(column)
+
+
+def _apply_spot_cell() -> None:
+    """Map a clicked matrix cell onto the pair dropdowns before they render."""
+    pair = _selected_cell(st.session_state.get("spot_matrix_grid"))
+    if pair is None:
+        return
+    numerator, denominator = pair
+    if numerator == denominator:
+        return
+    st.session_state.fx_numerator = numerator
+    st.session_state.fx_denominator = denominator
+
+
 def _show_spot_matrix(matrix: pd.DataFrame) -> None:
     display = pd.DataFrame(
         {
@@ -100,16 +125,16 @@ def _show_spot_matrix(matrix: pd.DataFrame) -> None:
         },
         index=matrix.index,
     )
-    display.insert(0, "Base \\ Quote", list(matrix.index))
-    html = display.to_html(
-        index=False,
-        classes="returns-table",
-        border=0,
-        justify="center",
-        escape=False,
+    display.index.name = "Base \\ Quote"
+    st.caption("Click a cell to plot that pair (row = numerator, column = denominator).")
+    st.dataframe(
+        display,
+        use_container_width=True,
+        hide_index=False,
+        on_select=_apply_spot_cell,
+        selection_mode="single-cell",
+        key="spot_matrix_grid",
     )
-    st.markdown(RETURNS_TABLE_CSS, unsafe_allow_html=True)
-    st.markdown(html, unsafe_allow_html=True)
 
 
 def render() -> None:

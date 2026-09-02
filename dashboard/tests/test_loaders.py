@@ -12,7 +12,13 @@ from views.common import (
     normalize,
     preprocess,
 )
-from views.currencies import last_usd_per_units, pair_rate, spot_cross_matrix, usd_per_unit
+from views.currencies import (
+    _selected_cell,
+    last_usd_per_units,
+    pair_rate,
+    spot_cross_matrix,
+    usd_per_unit,
+)
 
 
 def test_storage_filename_strips_yahoo_prefix() -> None:
@@ -158,3 +164,9 @@ def test_pair_rate_is_numerator_over_denominator() -> None:
     assert abs(eurusd - 1.12) < 1e-12
     assert abs(usdjpy - 148.0) < 1e-12
     assert abs(eurjpy - 1.12 * 148.0) < 1e-9
+
+
+def test_selected_cell_reads_dataframe_event() -> None:
+    assert _selected_cell(None) is None
+    assert _selected_cell({"selection": {"cells": []}}) is None
+    assert _selected_cell({"selection": {"cells": [("EUR", "JPY")]}}) == ("EUR", "JPY")
