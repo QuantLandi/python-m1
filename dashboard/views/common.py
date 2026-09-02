@@ -10,10 +10,9 @@ import pandas as pd
 import streamlit as st
 import yfinance as yf
 
-APP_DIR = Path(__file__).resolve().parent.parent
-DATA_CACHE_DIR = APP_DIR / "data_cache"
-DATA_DIR = APP_DIR / "data"
-DATA_CACHE_DIR.mkdir(exist_ok=True)
+from paths import DATA_CACHE_DIR, DATA_DIR, DASHBOARD_DIR
+
+APP_DIR = DASHBOARD_DIR
 
 DEFAULT_START_DATE = date(1927, 12, 30)  # ^GSPC bundled history start; used if CSV missing
 DEFAULT_END_DATE = date.today()
@@ -26,10 +25,6 @@ def _storage_filename(symbol: str) -> str:
 
 def _cache_path(symbol: str) -> Path:
     return DATA_CACHE_DIR / f"{_storage_filename(symbol)}.csv"
-
-
-def _bundled_path(symbol: str) -> Path:
-    return DATA_DIR / f"{_storage_filename(symbol)}.csv"
 
 
 def _legacy_paths(symbol: str) -> tuple[Path, ...]:
@@ -49,16 +44,52 @@ def _read_price_csv(path: Path, symbol: str) -> pd.Series | None:
     return frame[column].rename(symbol)
 
 
+def _bundled_candidates(symbol: str) -> tuple[Path, ...]:
+    """All locations where bundled CSVs may live (Cloud cwd is often repo root)."""
+    name = f"{_storage_filename(symbol)}.csv"
+    return (
+        DATA_DIR / name,
+        Path.cwd() / "dashboard" / "data" / name,
+        Path.cwd() / "data" / name,
+        *_legacy_paths(symbol),
+    )
+
+
+def _cache_candidates(symbol: str) -> tuple[Path, ...]:
+    name = f"{_storage_filename(symbol)}.csv"
+    return (
+        _cache_path(symbol),
+        Path.cwd() / "dashboard" / "data_cache" / name,
+        Path.cwd() / "data_cache" / name,
+    )
+
+
+def _read_first_available_csv(paths: tuple[Path, ...], symbol: str) -> pd.Series | None:
+    seen: set[Path] = set()
+    for path in paths:
+        resolved = path.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        part = _read_price_csv(path, symbol)
+        if part is not None:
+            return part
+    return None
+
+
+def _load_bundled_series(symbol: str) -> pd.Series | None:
+    return _read_first_available_csv(_bundled_candidates(symbol), symbol)
+
+
+def _load_cached_series(symbol: str) -> pd.Series | None:
+    return _read_first_available_csv(_cache_candidates(symbol), symbol)
+
+
 def _load_stored_series(symbol: str) -> pd.Series | None:
     """Load the widest available price series from bundled data and cache."""
     series_parts: list[pd.Series] = []
-    candidate_paths = (_bundled_path(symbol), _cache_path(symbol), *_legacy_paths(symbol))
-    seen_paths: set[Path] = set()
-    for path in candidate_paths:
-        if path in seen_paths:
-            continue
-        seen_paths.add(path)
-        part = _read_price_csv(path, symbol)
+    for loader in (_load_bundled_series, _load_cached_series):
+        part = loader(symbol)
         if part is not None:
             series_parts.append(part)
     if not series_parts:
@@ -82,11 +113,28 @@ def _merge_live_and_stored(symbol: str, live: pd.Series | None) -> pd.Series:
 
 
 def get_available_date_bounds(symbol: str) -> tuple[date, date] | None:
-    """Return the earliest and latest dates available in stored data for a symbol."""
-    series = _load_stored_series(symbol)
-    if series is None or series.empty:
+    """Return the earliest and latest dates available for a symbol."""
+    bundled = _load_bundled_series(symbol)
+    cached = _load_cached_series(symbol)
+
+    if bundled is None and cached is None:
         return None
-    return series.index.min().date(), series.index.max().date()
+
+    # Bundled CSV holds full history; cache may only contain recent Yahoo fetches (~2007+).
+    if bundled is not None:
+        earliest = bundled.index.min().date()
+    elif cached is not None:
+        earliest = cached.index.min().date()
+    else:
+        earliest = DEFAULT_START_DATE
+
+    latest_candidates = [
+        s.index.max().date()
+        for s in (bundled, cached)
+        if s is not None and not s.empty
+    ]
+    latest = max(latest_candidates) if latest_candidates else DEFAULT_END_DATE
+    return earliest, latest
 
 
 def _merge_cache(symbol: str, close_series: pd.Series) -> None:

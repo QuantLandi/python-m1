@@ -15,6 +15,7 @@ from views.common import (
 )
 
 SP500_TICKER = "^GSPC"
+SP500_BUNDLED_FILE = "GSPC.csv"
 DEFAULT_LOOKBACK_DAYS = 365
 
 
@@ -60,8 +61,8 @@ def render() -> None:
         )
         return
 
-    cache_file = DATA_CACHE_DIR / f"{SP500_TICKER.replace('^', '').replace('=', '_')}.csv"
-    bundled_file = DATA_DIR / f"{SP500_TICKER.replace('^', '').replace('=', '_')}.csv"
+    cache_file = DATA_CACHE_DIR / SP500_BUNDLED_FILE
+    bundled_file = DATA_DIR / SP500_BUNDLED_FILE
     if not cache_file.exists() and bundled_file.exists():
         st.info("Showing bundled S&P 500 data (live Yahoo Finance fetch unavailable).")
 
