@@ -148,7 +148,6 @@ def _render_return_metrics(prices: pd.Series) -> None:
 
 def render() -> None:
     st.header(":material/table_chart_view: Stocks")
-    st.caption("Integrated stock analytics covering flagship single names.")
 
     bounds = get_available_date_bounds(SP500_TICKER)
     if bounds is None:
