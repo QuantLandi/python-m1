@@ -10,6 +10,7 @@ __pycache__/
 # Dashboard cache (secrets stay in dashboard/.gitignore)
 dashboard/data_cache/*
 !dashboard/data_cache/.gitkeep
+data_cache/
 
 # OS / editor
 .DS_Store
