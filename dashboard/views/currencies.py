@@ -77,10 +77,15 @@ def last_usd_per_units(prices: pd.DataFrame) -> tuple[pd.Timestamp, pd.Series] |
 
 
 def pair_rate(usd_paths: pd.DataFrame, numerator: str, denominator: str) -> pd.Series:
-    """Units of denominator per 1 unit of numerator."""
-    return (usd_paths[numerator] / usd_paths[denominator]).dropna().rename(
-        f"{numerator}/{denominator}"
-    )
+    """Units of denominator per 1 unit of numerator. Same-currency pairs are 1."""
+    name = f"{numerator}/{denominator}"
+    if numerator == denominator:
+        if numerator in usd_paths.columns:
+            index = usd_paths[numerator].dropna().index
+        else:
+            index = usd_paths.index
+        return pd.Series(1.0, index=index, name=name)
+    return (usd_paths[numerator] / usd_paths[denominator]).dropna().rename(name)
 
 
 def _format_rate(value: float, quote: str) -> str:
@@ -91,50 +96,39 @@ def _format_rate(value: float, quote: str) -> str:
     return f"{value:,.4f}"
 
 
-def _selected_cell(event) -> tuple[str, str] | None:
-    """Return (row, column) from a Streamlit dataframe selection event."""
-    if event is None:
-        return None
-    selection = event["selection"] if isinstance(event, dict) else getattr(event, "selection", None)
-    if selection is None:
-        return None
-    cells = selection["cells"] if isinstance(selection, dict) else getattr(selection, "cells", None)
-    if not cells:
-        return None
-    row, column = cells[0]
-    return str(row), str(column)
-
-
-def _apply_spot_cell() -> None:
-    """Map a clicked matrix cell onto the pair dropdowns before they render."""
-    pair = _selected_cell(st.session_state.get("spot_matrix_grid"))
-    if pair is None:
-        return
-    numerator, denominator = pair
-    if numerator == denominator:
-        return
+def _pick_pair(numerator: str, denominator: str) -> None:
+    """Button callback: set the plotted pair before the next run."""
     st.session_state.fx_numerator = numerator
     st.session_state.fx_denominator = denominator
 
 
-def _show_spot_matrix(matrix: pd.DataFrame) -> None:
-    display = pd.DataFrame(
-        {
-            col: [_format_rate(matrix.loc[row, col], col) for row in matrix.index]
-            for col in matrix.columns
-        },
-        index=matrix.index,
-    )
-    display.index.name = "Base \\ Quote"
+def _show_spot_matrix(
+    matrix: pd.DataFrame,
+    numerator: str,
+    denominator: str,
+) -> None:
     st.caption("Click a cell to plot that pair (row = numerator, column = denominator).")
-    st.dataframe(
-        display,
-        use_container_width=True,
-        hide_index=False,
-        on_select=_apply_spot_cell,
-        selection_mode="single-cell",
-        key="spot_matrix_grid",
-    )
+    quotes = list(matrix.columns)
+    header = st.columns(len(quotes) + 1)
+    header[0].markdown("")
+    for index, quote in enumerate(quotes):
+        header[index + 1].markdown(
+            f"<div style='text-align:center'><b>{quote}</b></div>",
+            unsafe_allow_html=True,
+        )
+    for base in matrix.index:
+        row = st.columns(len(quotes) + 1)
+        row[0].markdown(f"**{base}**")
+        for index, quote in enumerate(quotes):
+            selected = base == numerator and quote == denominator
+            row[index + 1].button(
+                _format_rate(float(matrix.loc[base, quote]), quote),
+                key=f"fx_cell_{base}_{quote}",
+                use_container_width=True,
+                type="primary" if selected else "secondary",
+                on_click=_pick_pair,
+                args=(base, quote),
+            )
 
 
 def render() -> None:
@@ -186,17 +180,16 @@ def render() -> None:
         )
         if "fx_numerator" not in st.session_state:
             st.session_state.fx_numerator = "EUR"
+        if "fx_denominator" not in st.session_state:
+            st.session_state.fx_denominator = "USD"
         numerator = st.selectbox(
             "Numerator (base)",
             options=list(CURRENCIES),
             key="fx_numerator",
         )
-        denom_options = [ccy for ccy in CURRENCIES if ccy != numerator]
-        if st.session_state.get("fx_denominator") not in denom_options:
-            st.session_state.fx_denominator = "USD" if "USD" in denom_options else denom_options[0]
         denominator = st.selectbox(
             "Denominator (quote)",
-            options=denom_options,
+            options=list(CURRENCIES),
             key="fx_denominator",
         )
 
@@ -243,7 +236,7 @@ def render() -> None:
     st.sidebar.caption(f"Last updated: {as_of.strftime('%Y-%m-%d')}")
 
     st.subheader(f"Spot matrix — {as_of.strftime('%Y-%m-%d')}")
-    _show_spot_matrix(matrix)
+    _show_spot_matrix(matrix, numerator, denominator)
 
     pair_name = f"{numerator}/{denominator}"
     chart_mask = (aligned.index >= pd.Timestamp(start_date)) & (
@@ -253,7 +246,9 @@ def render() -> None:
     if series.empty:
         st.warning("No observations in the selected date range.")
     else:
-        hover_fmt = ",.2f" if denominator == "JPY" else ",.4f"
+        hover_fmt = ",.4f" if numerator == denominator else (
+            ",.2f" if denominator == "JPY" else ",.4f"
+        )
         fig = go.Figure()
         fig.add_trace(
             go.Scatter(
@@ -265,11 +260,16 @@ def render() -> None:
                 hovertemplate=f"%{{y:{hover_fmt}}}<br>%{{x|%Y-%m-%d}}<extra>{pair_name}</extra>",
             )
         )
+        yaxis_title = (
+            f"{denominator} per 1 {numerator}"
+            if numerator != denominator
+            else f"{numerator} per 1 {numerator}"
+        )
         fig.update_layout(
             **chart_layout(
                 title=pair_name,
                 height=450,
-                yaxis_title=f"{denominator} per 1 {numerator}",
+                yaxis_title=yaxis_title,
                 xaxis_title="Date",
                 hovermode="x unified",
             )
