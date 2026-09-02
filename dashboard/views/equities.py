@@ -45,12 +45,41 @@ def render() -> None:
     if bounds is None:
         st.sidebar.warning("Bundled S&P 500 history file missing — date range may be limited.")
     earliest_date = bounds[0] if bounds else DEFAULT_START_DATE
-    end_date = DEFAULT_END_DATE
+
+    def _apply_lookback() -> None:
+        end = DEFAULT_END_DATE
+        years = LOOKBACK_YEARS[st.session_state.lookback]
+        st.session_state.end_date = end
+        st.session_state.start_date = _lookback_start(end, years, earliest_date)
+
+    if "lookback" not in st.session_state:
+        st.session_state.lookback = "1y"
+    if "start_date" not in st.session_state or "end_date" not in st.session_state:
+        _apply_lookback()
 
     with st.sidebar:
-        lookback = st.selectbox("Lookback", list(LOOKBACK_YEARS), index=0)
-        start_date = _lookback_start(end_date, LOOKBACK_YEARS[lookback], earliest_date)
-        st.caption(f"{start_date:%Y-%m-%d} → {end_date:%Y-%m-%d}")
+        st.selectbox(
+            "Lookback",
+            list(LOOKBACK_YEARS),
+            key="lookback",
+            on_change=_apply_lookback,
+        )
+        start_date = st.date_input(
+            "Start date",
+            min_value=earliest_date,
+            max_value=DEFAULT_END_DATE,
+            key="start_date",
+        )
+        end_date = st.date_input(
+            "End date",
+            min_value=earliest_date,
+            max_value=DEFAULT_END_DATE,
+            key="end_date",
+        )
+
+    if start_date > end_date:
+        st.warning("Start date must be on or before the end date.")
+        return
 
     if start_date == end_date:
         st.warning("Date range must span at least two distinct dates.")
