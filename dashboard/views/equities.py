@@ -75,6 +75,39 @@ def _format_return(value: float | None) -> str:
     return f"{value:+.1%}"
 
 
+RETURNS_TABLE_CSS = """
+<style>
+table.returns-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.25rem 0 1rem 0;
+  font-size: 1.2rem;
+}
+table.returns-table th {
+  background-color: #2A2118;
+  color: #FF962F;
+  font-weight: 600;
+  padding: 0.65rem 0.75rem;
+  text-align: center;
+  border: 1px solid #2A2A2A;
+}
+table.returns-table td {
+  background-color: #1F1F1F;
+  color: #FFFFFF;
+  padding: 0.75rem 0.75rem;
+  text-align: center;
+  font-size: 1.35rem;
+  border: 1px solid #2A2A2A;
+}
+</style>
+"""
+
+
+def _show_returns_table(frame: pd.DataFrame) -> None:
+    html = frame.to_html(index=False, classes="returns-table", border=0, justify="center")
+    st.markdown(html, unsafe_allow_html=True)
+
+
 def _render_return_metrics(prices: pd.Series) -> None:
     last_day = prices.dropna().index[-1]
     week_start = last_day - pd.Timedelta(days=int(last_day.weekday()))
@@ -84,11 +117,11 @@ def _render_return_metrics(prices: pd.Series) -> None:
     year_start = last_day.replace(month=1, day=1)
 
     trailing = {
-        "1d": _trading_day_return(prices),
-        "7d": _trailing_return(prices, 7),
-        "30d": _trailing_return(prices, 30),
-        "90d": _trailing_return(prices, 90),
-        "1y": _trailing_return(prices, 365),
+        "1-day": _trading_day_return(prices),
+        "7-day": _trailing_return(prices, 7),
+        "30-day": _trailing_return(prices, 30),
+        "90-day": _trailing_return(prices, 90),
+        "1-year": _trailing_return(prices, 365),
     }
     calendar = {
         "Week to date": _since_return(prices, week_start),
@@ -106,10 +139,11 @@ def _render_return_metrics(prices: pd.Series) -> None:
         index=["Return"],
     )
 
+    st.markdown(RETURNS_TABLE_CSS, unsafe_allow_html=True)
     st.caption("Trailing returns")
-    st.table(trailing_table)
+    _show_returns_table(trailing_table)
     st.caption("Calendar returns")
-    st.table(calendar_table)
+    _show_returns_table(calendar_table)
 
 
 def render() -> None:
