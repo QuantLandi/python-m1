@@ -128,8 +128,4 @@ def render() -> None:
 
     st.plotly_chart(fig, use_container_width=True)
 
-    with st.expander("Normalized cumulative returns"):
-        st.dataframe(normalized.style.format("{:.2f}"))
-
-
 render()
