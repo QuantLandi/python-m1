@@ -12,6 +12,7 @@ from views.common import (
     normalize,
     preprocess,
 )
+from views.currencies import last_usd_per_units, spot_cross_matrix, usd_per_unit
 
 
 def test_storage_filename_strips_yahoo_prefix() -> None:
@@ -99,3 +100,38 @@ def test_live_fetch_starts_at_latest_stored_date(tmp_path, monkeypatch) -> None:
     captured.clear()
     download_fred_data(("DGS10",), date(1962, 1, 2), date(2024, 6, 14), use_live=True)
     assert captured == {}
+
+
+def test_usd_per_unit_conventions() -> None:
+    assert usd_per_unit(1.10, "usd_quote") == 1.10
+    assert usd_per_unit(150.0, "usd_base") == 1.0 / 150.0
+
+
+def test_spot_cross_matrix_from_usd_legs() -> None:
+    usd_per = pd.Series({"USD": 1.0, "EUR": 1.10, "JPY": 1.0 / 150.0})
+    matrix = spot_cross_matrix(usd_per)
+    assert matrix.loc["EUR", "USD"] == 1.10
+    assert matrix.loc["USD", "JPY"] == 150.0
+    assert abs(matrix.loc["EUR", "JPY"] - 165.0) < 1e-9
+    assert abs(matrix.loc["EUR", "JPY"] * matrix.loc["JPY", "EUR"] - 1.0) < 1e-9
+    assert matrix.loc["USD", "USD"] == 1.0
+
+
+def test_last_usd_per_units_aligns_legs() -> None:
+    prices = pd.DataFrame(
+        {
+            "EURUSD=X": [1.10, 1.12],
+            "GBPUSD=X": [1.25, 1.26],
+            "AUDUSD=X": [0.65, 0.66],
+            "NZDUSD=X": [0.58, 0.59],
+            "USDJPY=X": [150.0, 148.0],
+            "USDCHF=X": [0.90, 0.88],
+            "USDCAD=X": [1.35, 1.36],
+        },
+        index=pd.to_datetime(["2024-01-02", "2024-01-03"]),
+    )
+    as_of, usd_per = last_usd_per_units(prices)
+    assert as_of.date() == date(2024, 1, 3)
+    assert abs(usd_per["EUR"] - 1.12) < 1e-12
+    assert abs(usd_per["JPY"] - 1.0 / 148.0) < 1e-12
+    assert usd_per["USD"] == 1.0
