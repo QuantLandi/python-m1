@@ -40,9 +40,8 @@ python-m1/                          # instructor repo
     ├── README.md                   # student brief + milestones
     ├── dashboard.py
     ├── views/
-    ├── data/
+    ├── data/                       # bundled GSPC + FRED CSVs
     ├── data_cache/                 # gitignored
-    ├── static/
     ├── .streamlit/
     └── tests/
 ```
@@ -66,9 +65,9 @@ uv run streamlit run dashboard.py
 | Bonds tab | `views/bonds.py` | US Treasury curve + OECD 10Y (pandas_datareader / FRED; scope frozen) |
 | Commodities tab | `views/commodities.py` | Metals, energy, grains charts |
 | Currencies tab | `views/currencies.py` | FX pairs + correlation heatmap |
-| Offline fallback | `data/` | App works without internet |
+| Offline fallback | `data/` | Stocks + bonds work without internet (`GSPC.csv`, FRED series) |
 | Cache | `data_cache/` | Live fetches persist between runs |
-| Theme | `.streamlit/config.toml`, `static/` | Dark theme, orange accent |
+| Theme | `.streamlit/config.toml` | Dark theme, orange accent |
 | Tests | `tests/test_loaders.py` | Smoke tests on core helpers |
 | Deploy | Streamlit Cloud | Public URL |
 
@@ -169,7 +168,7 @@ Uses `pandas_datareader` (`DataReader(..., "fred")`) — **no FRED API key**.
 
 **Out of scope:** series multiselect, top movers, spreads, vol surface, correlation, CSV download, regime overlay, FRED API key.
 
-**Exit criterion:** all four charts render from live FRED; cache works on a second run.
+**Exit criterion:** all four charts render from live FRED; bundled `data/DGS*.csv` and `data/IRLTLT01*.csv` cover offline; cache works on a second run.
 
 **Session:** 10.
 
@@ -193,8 +192,8 @@ Uses `pandas_datareader` (`DataReader(..., "fred")`) — **no FRED API key**.
 ### Phase 6 — Tests, polish, deploy
 
 1. `tests/test_loaders.py` — smoke tests on `preprocess`, disk fallback, date helpers
-2. `static/` fonts + full `.streamlit/config.toml` (match reference branding)
-3. Bundled `data/` CSVs for offline demo
+2. `.streamlit/config.toml` — dark theme, orange accent (no custom font bundle)
+3. Bundled `data/` CSVs: `GSPC.csv` plus all Treasury (`DGS*`) and OECD 10Y (`IRLTLT01*`) series
 4. Streamlit Cloud deploy
 5. README: deploy steps + demo checklist
 
@@ -302,7 +301,7 @@ by Enes SAHIN. We reuse the overall architecture and design patterns; implementa
 | Reference too large for beginners | Equities stays a slim S&P 500 view; richer analytics live on other tabs |
 | AI-generated submissions | Ungraded + MCQ + live demo (explain one function) |
 | FRED key friction | Use `pandas_datareader` public FRED feed (no key) |
-| yfinance outages | Bundled `data/` + `data_cache/` fallback |
+| yfinance / FRED outages | Bundled `data/` (GSPC + FRED) + `data_cache/` fallback |
 | Deploy failures on session 12 | Front-load deploy walkthrough; troubleshoot in room |
 
 ---
@@ -318,4 +317,4 @@ by Enes SAHIN. We reuse the overall architecture and design patterns; implementa
 
 ## Next step
 
-Implement **Phase 0** only — scaffold, stubs, theme, README. Verify the app launches before starting Phase 1.
+Implement **Phase 5** — commodities and currencies tabs (reuse `common.py`). Regime overlays (Phase 3) stay deferred until one of those tabs exists.

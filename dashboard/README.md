@@ -68,7 +68,7 @@ See [BUILD_PLAN.md](BUILD_PLAN.md) for the full instructor build plan.
 | `views/bonds.py` | Bonds tab (Treasury curve + OECD 10Y) |
 | `views/commodities.py` | Commodities tab |
 | `views/currencies.py` | Currencies tab |
-| `data/` | Bundled CSV fallbacks (offline mode) |
+| `data/` | Bundled CSV fallbacks (S&P 500 + FRED yields) |
 | `data_cache/` | Auto-generated cache (not committed) |
 | `.streamlit/config.toml` | Dark theme and styling |
 
