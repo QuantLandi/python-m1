@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Tuple
 
@@ -10,18 +10,106 @@ import pandas as pd
 import streamlit as st
 import yfinance as yf
 
-DEFAULT_START_DATE = date(1900, 1, 1)
-DEFAULT_END_DATE = date.today()
-
-DATA_CACHE_DIR = Path("data_cache")
+APP_DIR = Path(__file__).resolve().parent.parent
+DATA_CACHE_DIR = APP_DIR / "data_cache"
+DATA_DIR = APP_DIR / "data"
 DATA_CACHE_DIR.mkdir(exist_ok=True)
+
+DEFAULT_START_DATE = date(2010, 1, 1)
+DEFAULT_END_DATE = date.today()
 
 
 def _cache_path(symbol: str) -> Path:
     return DATA_CACHE_DIR / f"{symbol}.csv"
 
 
-@st.cache_data(show_spinner=False)
+def _bundled_path(symbol: str) -> Path:
+    return DATA_DIR / f"{symbol}.csv"
+
+
+def _read_price_csv(path: Path, symbol: str) -> pd.Series | None:
+    if not path.exists():
+        return None
+    frame = pd.read_csv(path, index_col=0, parse_dates=True)
+    frame.index = frame.index.tz_localize(None)
+    column = "Close" if "Close" in frame.columns else frame.columns[0]
+    return frame[column].rename(symbol)
+
+
+def _merge_cache(symbol: str, close_series: pd.Series) -> None:
+    path = _cache_path(symbol)
+    cache_frame = close_series.rename("Close").to_frame()
+    if path.exists():
+        existing = pd.read_csv(path, index_col=0, parse_dates=True)
+        existing.index = existing.index.tz_localize(None)
+        cache_frame = pd.concat([existing, cache_frame]).sort_index()
+        cache_frame = cache_frame[~cache_frame.index.duplicated(keep="last")]
+    cache_frame.to_csv(path)
+
+
+@st.cache_data(show_spinner=False, ttl=60 * 60)
+def _fetch_live_prices(
+    tickers: Tuple[str, ...],
+    start_date: date,
+    end_date: date,
+) -> pd.DataFrame:
+    """Download live prices from Yahoo Finance. Cached for one hour."""
+    if not tickers:
+        return pd.DataFrame()
+
+    end_exclusive = end_date + timedelta(days=1)
+    frames: list[pd.Series] = []
+
+    try:
+        price_frame = yf.download(
+            list(tickers),
+            start=start_date,
+            end=end_exclusive,
+            auto_adjust=True,
+            progress=False,
+        )
+        close_prices = price_frame["Close"] if "Close" in price_frame else price_frame
+        if isinstance(close_prices, pd.Series):
+            close_prices = close_prices.to_frame(name=tickers[0])
+
+        close_prices.index = close_prices.index.tz_localize(None)
+
+        for symbol in tickers:
+            if symbol not in close_prices.columns:
+                continue
+            series = close_prices[symbol].dropna()
+            if series.empty:
+                continue
+            frames.append(series.rename(symbol))
+            _merge_cache(symbol, series)
+    except Exception:
+        frames = []
+
+    if not frames:
+        for symbol in tickers:
+            try:
+                history = yf.Ticker(symbol).history(
+                    start=start_date,
+                    end=end_exclusive,
+                    auto_adjust=True,
+                )
+            except Exception:
+                continue
+            if history.empty or "Close" not in history.columns:
+                continue
+            series = history["Close"].dropna()
+            series.index = series.index.tz_localize(None)
+            if series.empty:
+                continue
+            frames.append(series.rename(symbol))
+            _merge_cache(symbol, series)
+
+    if not frames:
+        return pd.DataFrame()
+
+    return pd.concat(frames, axis=1).sort_index()
+
+
 def download_data(
     tickers: Tuple[str, ...],
     start_date: date,
@@ -29,7 +117,7 @@ def download_data(
     *,
     use_live: bool = True,
 ) -> pd.DataFrame:
-    """Fetch adjusted close prices with optional CSV fallback when live data is unavailable."""
+    """Fetch prices via Yahoo Finance, then fall back to cache and bundled CSVs."""
     if not tickers:
         return pd.DataFrame()
 
@@ -37,47 +125,25 @@ def download_data(
     fetched = pd.DataFrame()
 
     if use_live:
-        try:
-            price_frame = yf.download(
-                list(tickers),
-                start=start_date,
-                end=end_date,
-                auto_adjust=True,
-                progress=False,
-            )
-            close_prices = price_frame["Close"] if "Close" in price_frame else price_frame
-            if isinstance(close_prices, pd.Series):
-                close_prices = close_prices.to_frame(name=tickers[0])
-
-            close_prices.index = close_prices.index.tz_localize(None)
-
-            if not close_prices.empty:
-                fetched = close_prices
-                for symbol in tickers:
-                    if symbol not in fetched.columns:
-                        continue
-                    cache_series = fetched[[symbol]].rename(columns={symbol: "Close"})
-                    path = _cache_path(symbol)
-                    if path.exists():
-                        existing = pd.read_csv(path, index_col=0, parse_dates=True)
-                        existing.index = existing.index.tz_localize(None)
-                        cache_series = pd.concat([existing, cache_series]).sort_index()
-                        cache_series = cache_series[~cache_series.index.duplicated(keep="last")]
-                    cache_series.to_csv(path)
-        except Exception:
-            fetched = pd.DataFrame()
+        fetched = _fetch_live_prices(tickers, start_date, end_date)
 
     if fetched.empty:
         cached_frames = []
         for symbol in tickers:
-            path = _cache_path(symbol)
-            if not path.exists():
-                continue
-            cached = pd.read_csv(path, index_col=0, parse_dates=True)
-            cached.index = cached.index.tz_localize(None)
-            cached_frames.append(cached.rename(columns={cached.columns[0]: symbol}))
+            series = _read_price_csv(_cache_path(symbol), symbol)
+            if series is not None:
+                cached_frames.append(series)
         if cached_frames:
             fetched = pd.concat(cached_frames, axis=1).sort_index()
+
+    if fetched.empty:
+        bundled_frames = []
+        for symbol in tickers:
+            series = _read_price_csv(_bundled_path(symbol), symbol)
+            if series is not None:
+                bundled_frames.append(series)
+        if bundled_frames:
+            fetched = pd.concat(bundled_frames, axis=1).sort_index()
 
     if fetched.empty:
         return pd.DataFrame()

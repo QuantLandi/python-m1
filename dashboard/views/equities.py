@@ -4,6 +4,8 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from views.common import (
+    DATA_CACHE_DIR,
+    DATA_DIR,
     DEFAULT_END_DATE,
     DEFAULT_START_DATE,
     download_data,
@@ -42,8 +44,16 @@ def render() -> None:
     prices = preprocess(prices)
 
     if prices.empty:
-        st.error("No data returned for the S&P 500. Check your connection and try again.")
+        st.error(
+            "No data returned for the S&P 500. "
+            "Yahoo Finance may be unavailable from this server — bundled fallback data is missing too."
+        )
         return
+
+    cache_file = DATA_CACHE_DIR / f"{SP500_TICKER}.csv"
+    bundled_file = DATA_DIR / f"{SP500_TICKER}.csv"
+    if not cache_file.exists() and bundled_file.exists():
+        st.info("Showing bundled S&P 500 data (live Yahoo Finance fetch unavailable).")
 
     st.sidebar.caption(f"Last updated: {prices.index[-1].strftime('%Y-%m-%d')}")
 
