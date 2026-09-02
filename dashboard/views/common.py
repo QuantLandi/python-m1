@@ -321,13 +321,6 @@ def _trailing_return(series: pd.Series, days: int) -> float | None:
     return _simple_return(last, prior.iloc[-1])
 
 
-def _trading_day_return(series: pd.Series) -> float | None:
-    series = series.dropna().sort_index()
-    if len(series) < 2:
-        return None
-    return _simple_return(series.iloc[-1], series.iloc[-2])
-
-
 def _since_return(series: pd.Series, period_start: pd.Timestamp) -> float | None:
     series = series.dropna().sort_index()
     window = series.loc[period_start:]
@@ -409,7 +402,6 @@ def render_return_metrics(prices: pd.Series, *, inject_css: bool = True) -> None
     year_start = last_day.replace(month=1, day=1)
 
     trailing = {
-        "1-day": _trading_day_return(prices),
         "7-day": _trailing_return(prices, 7),
         "30-day": _trailing_return(prices, 30),
         "90-day": _trailing_return(prices, 90),
