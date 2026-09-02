@@ -1,0 +1,14 @@
+# Streamlit Community Cloud reads config from the repository root.
+# Local dev from dashboard/ uses dashboard/.streamlit/config.toml (keep both in sync).
+
+[theme]
+base = "dark"
+primaryColor = "#FF962F"
+backgroundColor = "#0A0A0A"
+secondaryBackgroundColor = "#1F1F1F"
+textColor = "#FFFFFF"
+font = "sans serif"
+
+baseRadius = "small"
+showWidgetBorder = true
+borderColor = "#2A2A2A"

@@ -7,6 +7,10 @@ __pycache__/
 # uv
 # uv.lock is committed for reproducibility
 
+# Dashboard cache (secrets stay in dashboard/.gitignore)
+dashboard/data_cache/*
+!dashboard/data_cache/.gitkeep
+
 # OS / editor
 .DS_Store
 Thumbs.db

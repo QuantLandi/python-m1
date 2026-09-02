@@ -1,0 +1,17 @@
+[project]
+name = "market-monitor"
+version = "0.1.0"
+description = "Cross-Asset Market Monitor — PGE M1 Python for Finance project"
+requires-python = ">=3.12"
+dependencies = [
+    "matplotlib>=3.9",
+    "numpy>=2.5",
+    "pandas>=3.0",
+    "plotly>=6.0",
+    "requests>=2.32",
+    "streamlit>=1.40",
+    "yfinance>=0.2",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]

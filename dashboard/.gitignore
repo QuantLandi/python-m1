@@ -1,0 +1,9 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Secrets and local cache
+.env
+data_cache/*
+!data_cache/.gitkeep
