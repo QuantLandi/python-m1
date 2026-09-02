@@ -9,6 +9,7 @@ from views.common import (
     download_fred_data,
     get_available_date_bounds,
     lookback_start,
+    normalize,
     preprocess,
 )
 
@@ -34,6 +35,16 @@ def test_preprocess_empty_and_forward_fill() -> None:
     )
     cleaned = preprocess(frame)
     assert list(cleaned["A"]) == [1.0, 1.0, 3.0]
+
+
+def test_normalize_indexes_each_series_to_one() -> None:
+    frame = pd.DataFrame(
+        {"A": [50.0, 55.0, 60.0], "B": [200.0, 180.0, 220.0]},
+        index=pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03"]),
+    )
+    indexed = normalize(frame)
+    assert list(indexed["A"]) == [1.0, 1.1, 1.2]
+    assert list(indexed["B"]) == [1.0, 0.9, 1.1]
 
 
 def test_lookback_start_clamps_and_handles_leap_day() -> None:

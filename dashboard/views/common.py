@@ -292,3 +292,13 @@ def preprocess(data: pd.DataFrame) -> pd.DataFrame:
     if data.empty:
         return data
     return data.ffill().dropna()
+
+
+def normalize(data: pd.DataFrame) -> pd.DataFrame:
+    """Index each series to 1.0 at its first valid observation."""
+    if data.empty:
+        return data
+    first = data.apply(
+        lambda series: series.dropna().iloc[0] if series.notna().any() else float("nan")
+    )
+    return data.div(first)
