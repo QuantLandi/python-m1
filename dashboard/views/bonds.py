@@ -155,125 +155,117 @@ def render() -> None:
     oecd_labels = {series_id: label for series_id, label in OECD_10Y_SERIES}
     treasury_labels = {series_id: label for series_id, label, _ in TREASURY_SERIES}
 
-    top_left, top_right = st.columns(2)
-
-    with top_left:
-        oecd_latest = latest.reindex(oecd_ids).dropna().sort_values()
-        if oecd_latest.empty:
-            st.info("OECD 10Y yield snapshot unavailable.")
-        else:
-            labels = [oecd_labels[series_id] for series_id in oecd_latest.index]
-            fig = go.Figure(
-                data=[
-                    go.Bar(
-                        x=labels,
-                        y=oecd_latest.astype(float),
-                        marker=dict(color=_orange_gradient(len(oecd_latest))),
-                        hovertemplate="%{x}: %{y:.2f}%<extra></extra>",
-                    )
-                ]
-            )
-            fig.update_layout(
-                title=f"OECD 10-year yields ({as_of_text})",
-                yaxis_title="Yield (%)",
-                height=420,
-                template="plotly_white",
-                margin=dict(t=60, b=40),
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-    with top_right:
-        curve_rows = []
-        for series_id, tenor, years in TREASURY_SERIES:
-            value = latest.get(series_id)
-            if pd.isna(value):
-                continue
-            curve_rows.append((years, tenor, float(value)))
-        if not curve_rows:
-            st.info("U.S. Treasury yield curve snapshot unavailable.")
-        else:
-            curve_rows.sort(key=lambda row: row[0])
-            maturities, tenors, values = zip(*curve_rows)
-            fig = go.Figure(
-                data=[
-                    go.Scatter(
-                        x=list(maturities),
-                        y=list(values),
-                        mode="lines+markers",
-                        line=dict(width=2, color=CHART_COLOR),
-                        marker=dict(size=8, color=CHART_COLOR),
-                        customdata=list(tenors),
-                        hovertemplate="Tenor: %{customdata}<br>Yield: %{y:.2f}%<extra></extra>",
-                    )
-                ]
-            )
-            fig.update_layout(
-                title=f"U.S. Treasury curve ({as_of_text})",
-                xaxis_title="Maturity (years)",
-                yaxis_title="Yield (%)",
-                height=420,
-                template="plotly_white",
-                margin=dict(t=60, b=40),
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-    bottom_left, bottom_right = st.columns(2)
-
-    with bottom_left:
-        oecd_history = yields[[col for col in oecd_ids if col in yields.columns]].dropna(how="all")
-        if oecd_history.empty:
-            st.info("OECD 10Y time series unavailable.")
-        else:
-            fig = go.Figure()
-            for series_id in oecd_history.columns:
-                fig.add_trace(
-                    go.Scatter(
-                        x=oecd_history.index,
-                        y=oecd_history[series_id],
-                        mode="lines",
-                        name=oecd_labels[series_id],
-                        hovertemplate="%{y:.2f}%<br>%{x|%Y-%m-%d}<extra>%{fullData.name}</extra>",
-                    )
+    oecd_latest = latest.reindex(oecd_ids).dropna().sort_values()
+    if oecd_latest.empty:
+        st.info("OECD 10Y yield snapshot unavailable.")
+    else:
+        labels = [oecd_labels[series_id] for series_id in oecd_latest.index]
+        fig = go.Figure(
+            data=[
+                go.Bar(
+                    x=labels,
+                    y=oecd_latest.astype(float),
+                    marker=dict(color=_orange_gradient(len(oecd_latest))),
+                    hovertemplate="%{x}: %{y:.2f}%<extra></extra>",
                 )
-            fig.update_layout(
-                title="OECD 10-year yields over time",
-                yaxis_title="Yield (%)",
-                xaxis_title="Date",
-                height=420,
-                template="plotly_white",
-                hovermode="x unified",
-                margin=dict(t=60, b=40),
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            ]
+        )
+        fig.update_layout(
+            title=f"OECD 10-year yields ({as_of_text})",
+            yaxis_title="Yield (%)",
+            height=420,
+            template="plotly_white",
+            margin=dict(t=60, b=40),
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
-    with bottom_right:
-        treasury_history = yields[
-            [col for col in treasury_ids if col in yields.columns]
-        ].dropna(how="all")
-        if treasury_history.empty:
-            st.info("U.S. Treasury time series unavailable.")
-        else:
-            fig = go.Figure()
-            for series_id in treasury_history.columns:
-                fig.add_trace(
-                    go.Scatter(
-                        x=treasury_history.index,
-                        y=treasury_history[series_id],
-                        mode="lines",
-                        name=treasury_labels[series_id],
-                        hovertemplate="%{y:.2f}%<br>%{x|%Y-%m-%d}<extra>%{fullData.name}</extra>",
-                    )
+    curve_rows = []
+    for series_id, tenor, years in TREASURY_SERIES:
+        value = latest.get(series_id)
+        if pd.isna(value):
+            continue
+        curve_rows.append((years, tenor, float(value)))
+    if not curve_rows:
+        st.info("U.S. Treasury yield curve snapshot unavailable.")
+    else:
+        curve_rows.sort(key=lambda row: row[0])
+        maturities, tenors, values = zip(*curve_rows)
+        fig = go.Figure(
+            data=[
+                go.Scatter(
+                    x=list(maturities),
+                    y=list(values),
+                    mode="lines+markers",
+                    line=dict(width=2, color=CHART_COLOR),
+                    marker=dict(size=8, color=CHART_COLOR),
+                    customdata=list(tenors),
+                    hovertemplate="Tenor: %{customdata}<br>Yield: %{y:.2f}%<extra></extra>",
                 )
-            fig.update_layout(
-                title="U.S. Treasury yields over time",
-                yaxis_title="Yield (%)",
-                xaxis_title="Date",
-                height=420,
-                template="plotly_white",
-                hovermode="x unified",
-                margin=dict(t=60, b=40),
+            ]
+        )
+        fig.update_layout(
+            title=f"U.S. Treasury curve ({as_of_text})",
+            xaxis_title="Maturity (years)",
+            yaxis_title="Yield (%)",
+            height=420,
+            template="plotly_white",
+            margin=dict(t=60, b=40),
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    oecd_history = yields[[col for col in oecd_ids if col in yields.columns]].dropna(how="all")
+    if oecd_history.empty:
+        st.info("OECD 10Y time series unavailable.")
+    else:
+        fig = go.Figure()
+        for series_id in oecd_history.columns:
+            fig.add_trace(
+                go.Scatter(
+                    x=oecd_history.index,
+                    y=oecd_history[series_id],
+                    mode="lines",
+                    name=oecd_labels[series_id],
+                    hovertemplate="%{y:.2f}%<br>%{x|%Y-%m-%d}<extra>%{fullData.name}</extra>",
+                )
             )
-            st.plotly_chart(fig, use_container_width=True)
+        fig.update_layout(
+            title="OECD 10-year yields over time",
+            yaxis_title="Yield (%)",
+            xaxis_title="Date",
+            height=420,
+            template="plotly_white",
+            hovermode="x unified",
+            margin=dict(t=60, b=40),
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    treasury_history = yields[
+        [col for col in treasury_ids if col in yields.columns]
+    ].dropna(how="all")
+    if treasury_history.empty:
+        st.info("U.S. Treasury time series unavailable.")
+    else:
+        fig = go.Figure()
+        for series_id in treasury_history.columns:
+            fig.add_trace(
+                go.Scatter(
+                    x=treasury_history.index,
+                    y=treasury_history[series_id],
+                    mode="lines",
+                    name=treasury_labels[series_id],
+                    hovertemplate="%{y:.2f}%<br>%{x|%Y-%m-%d}<extra>%{fullData.name}</extra>",
+                )
+            )
+        fig.update_layout(
+            title="U.S. Treasury yields over time",
+            yaxis_title="Yield (%)",
+            xaxis_title="Date",
+            height=420,
+            template="plotly_white",
+            hovermode="x unified",
+            margin=dict(t=60, b=40),
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
 
 render()
