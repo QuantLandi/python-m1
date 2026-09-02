@@ -8,7 +8,6 @@ from views.common import (
     DEFAULT_END_DATE,
     download_fred_data,
     get_available_date_bounds,
-    preprocess,
 )
 
 CHART_COLOR = "#FF962F"
@@ -55,7 +54,7 @@ LOOKBACK_YEARS = {
     "max": None,
 }
 
-FRED_EARLIEST = date(1962, 1, 2)
+FRED_EARLIEST = date(1953, 4, 1)
 
 
 def _lookback_start(end: date, years: int | None, earliest: date) -> date:
@@ -89,12 +88,21 @@ def _latest_snapshot(frame: pd.DataFrame) -> tuple[pd.Timestamp, pd.Series] | No
     return as_of, filled.loc[as_of]
 
 
+def _earliest_yield_date() -> date:
+    """Allow the OECD 10Y start (1953); cached DGS10 must not raise the floor."""
+    starts = [FRED_EARLIEST]
+    for series_id in ALL_FRED_IDS:
+        bounds = get_available_date_bounds(series_id)
+        if bounds is not None:
+            starts.append(bounds[0])
+    return min(starts)
+
+
 def render() -> None:
     st.header(":material/stacked_line_chart: Bonds")
     st.caption("U.S. Treasury curve and OECD 10-year government yields (FRED).")
 
-    bounds = get_available_date_bounds("DGS10")
-    earliest_date = bounds[0] if bounds else FRED_EARLIEST
+    earliest_date = _earliest_yield_date()
 
     def _apply_lookback() -> None:
         end = DEFAULT_END_DATE
@@ -149,7 +157,8 @@ def render() -> None:
         return
 
     yields = download_fred_data(ALL_FRED_IDS, start_date, end_date, use_live=True)
-    yields = preprocess(yields)
+    if not yields.empty:
+        yields = yields.ffill().dropna(how="all")
 
     if yields.empty:
         st.error(
