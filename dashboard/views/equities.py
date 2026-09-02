@@ -9,6 +9,7 @@ from views.common import (
     DEFAULT_END_DATE,
     DEFAULT_START_DATE,
     download_data,
+    get_available_date_bounds,
     normalize,
     preprocess,
 )
@@ -21,19 +22,21 @@ def render() -> None:
     st.header(":material/table_chart_view: Stocks")
     st.caption("Integrated stock analytics covering flagship single names.")
 
-    default_start = max(DEFAULT_START_DATE, DEFAULT_END_DATE - timedelta(days=DEFAULT_LOOKBACK_DAYS))
+    bounds = get_available_date_bounds(SP500_TICKER)
+    earliest_date = bounds[0] if bounds else DEFAULT_START_DATE
+    default_start = max(earliest_date, DEFAULT_END_DATE - timedelta(days=DEFAULT_LOOKBACK_DAYS))
 
     with st.sidebar:
         start_date = st.date_input(
             "Start date",
             value=default_start,
-            min_value=DEFAULT_START_DATE,
+            min_value=earliest_date,
             max_value=DEFAULT_END_DATE,
         )
         end_date = st.date_input(
             "End date",
             value=DEFAULT_END_DATE,
-            min_value=DEFAULT_START_DATE,
+            min_value=earliest_date,
             max_value=DEFAULT_END_DATE,
         )
 

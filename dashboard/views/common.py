@@ -15,7 +15,7 @@ DATA_CACHE_DIR = APP_DIR / "data_cache"
 DATA_DIR = APP_DIR / "data"
 DATA_CACHE_DIR.mkdir(exist_ok=True)
 
-DEFAULT_START_DATE = date(2010, 1, 1)
+DEFAULT_START_DATE = date(2010, 1, 1)  # fallback when no stored series exists
 DEFAULT_END_DATE = date.today()
 
 
@@ -34,6 +34,27 @@ def _read_price_csv(path: Path, symbol: str) -> pd.Series | None:
     frame.index = frame.index.tz_localize(None)
     column = "Close" if "Close" in frame.columns else frame.columns[0]
     return frame[column].rename(symbol)
+
+
+def _load_stored_series(symbol: str) -> pd.Series | None:
+    """Load the widest available price series from bundled data and cache."""
+    series_parts: list[pd.Series] = []
+    for path in (_bundled_path(symbol), _cache_path(symbol)):
+        part = _read_price_csv(path, symbol)
+        if part is not None:
+            series_parts.append(part)
+    if not series_parts:
+        return None
+    combined = pd.concat(series_parts).sort_index()
+    return combined[~combined.index.duplicated(keep="last")]
+
+
+def get_available_date_bounds(symbol: str) -> tuple[date, date] | None:
+    """Return the earliest and latest dates available in stored data for a symbol."""
+    series = _load_stored_series(symbol)
+    if series is None or series.empty:
+        return None
+    return series.index.min().date(), series.index.max().date()
 
 
 def _merge_cache(symbol: str, close_series: pd.Series) -> None:
@@ -128,22 +149,13 @@ def download_data(
         fetched = _fetch_live_prices(tickers, start_date, end_date)
 
     if fetched.empty:
-        cached_frames = []
+        stored_frames = []
         for symbol in tickers:
-            series = _read_price_csv(_cache_path(symbol), symbol)
+            series = _load_stored_series(symbol)
             if series is not None:
-                cached_frames.append(series)
-        if cached_frames:
-            fetched = pd.concat(cached_frames, axis=1).sort_index()
-
-    if fetched.empty:
-        bundled_frames = []
-        for symbol in tickers:
-            series = _read_price_csv(_bundled_path(symbol), symbol)
-            if series is not None:
-                bundled_frames.append(series)
-        if bundled_frames:
-            fetched = pd.concat(bundled_frames, axis=1).sort_index()
+                stored_frames.append(series)
+        if stored_frames:
+            fetched = pd.concat(stored_frames, axis=1).sort_index()
 
     if fetched.empty:
         return pd.DataFrame()
