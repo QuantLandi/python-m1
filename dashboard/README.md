@@ -2,6 +2,10 @@
 
 Interactive Streamlit dashboard for stocks, bonds, commodities, and currencies. Built as the M1 **Python Programming for Finance** project (sessions 8–12).
 
+## Live app
+
+[Cross-Asset Market Monitor](https://python-m1-dashboard.streamlit.app/)
+
 ## Acknowledgement
 
 This project is inspired by the [Cross-Asset Market Monitor](https://github.com/enesdesahin/market_dashboard) by Enes SAHIN. We reuse the overall architecture and design patterns; implementation is our own coursework.
