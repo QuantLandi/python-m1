@@ -1,5 +1,6 @@
-from datetime import date
+from datetime import date, timedelta
 
+import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -35,6 +36,72 @@ def _lookback_start(end: date, years: int | None, earliest: date) -> date:
     except ValueError:
         start = end.replace(year=end.year - years, month=2, day=28)
     return max(earliest, start)
+
+
+def _simple_return(last: float, base: float) -> float | None:
+    if base == 0:
+        return None
+    return float(last / base - 1)
+
+
+def _trailing_return(series: pd.Series, days: int) -> float | None:
+    series = series.dropna().sort_index()
+    if series.empty:
+        return None
+    last = series.iloc[-1]
+    prior = series.loc[: series.index[-1] - pd.Timedelta(days=days)]
+    if prior.empty:
+        return None
+    return _simple_return(last, prior.iloc[-1])
+
+
+def _trading_day_return(series: pd.Series) -> float | None:
+    series = series.dropna().sort_index()
+    if len(series) < 2:
+        return None
+    return _simple_return(series.iloc[-1], series.iloc[-2])
+
+
+def _since_return(series: pd.Series, period_start: pd.Timestamp) -> float | None:
+    series = series.dropna().sort_index()
+    window = series.loc[period_start:]
+    if window.empty:
+        return None
+    return _simple_return(window.iloc[-1], window.iloc[0])
+
+
+def _format_return(value: float | None) -> str:
+    if value is None:
+        return "—"
+    return f"{value:+.2%}"
+
+
+def _render_return_metrics(prices: pd.Series) -> None:
+    last_day = prices.dropna().index[-1]
+    week_start = last_day - pd.Timedelta(days=int(last_day.weekday()))
+    month_start = last_day.replace(day=1)
+    year_start = last_day.replace(month=1, day=1)
+
+    trailing = [
+        ("1d", _trading_day_return(prices)),
+        ("7d", _trailing_return(prices, 7)),
+        ("30d", _trailing_return(prices, 30)),
+        ("90d", _trailing_return(prices, 90)),
+        ("1y", _trailing_return(prices, 365)),
+    ]
+    calendar = [
+        ("WTD", _since_return(prices, week_start)),
+        ("MTD", _since_return(prices, month_start)),
+        ("YTD", _since_return(prices, year_start)),
+    ]
+
+    cols = st.columns(len(trailing))
+    for col, (label, value) in zip(cols, trailing, strict=True):
+        col.metric(label, _format_return(value))
+
+    cols = st.columns(len(calendar))
+    for col, (label, value) in zip(cols, calendar, strict=True):
+        col.metric(label, _format_return(value))
 
 
 def render() -> None:
@@ -85,7 +152,9 @@ def render() -> None:
         st.warning("Date range must span at least two distinct dates.")
         return
 
-    prices = download_data((SP500_TICKER,), start_date, end_date, use_live=True)
+    metrics_start = max(earliest_date, end_date - timedelta(days=365 + 21))
+    fetch_start = min(start_date, metrics_start)
+    prices = download_data((SP500_TICKER,), fetch_start, end_date, use_live=True)
     prices = preprocess(prices)
 
     if prices.empty:
@@ -95,6 +164,14 @@ def render() -> None:
         )
         return
 
+    chart_mask = (prices.index >= pd.Timestamp(start_date)) & (
+        prices.index <= pd.Timestamp(end_date)
+    )
+    chart_prices = prices.loc[chart_mask]
+    if chart_prices.empty:
+        st.warning("No observations in the selected date range.")
+        return
+
     cache_file = DATA_CACHE_DIR / SP500_BUNDLED_FILE
     bundled_file = DATA_DIR / SP500_BUNDLED_FILE
     if not cache_file.exists() and bundled_file.exists():
@@ -102,7 +179,9 @@ def render() -> None:
 
     st.sidebar.caption(f"Last updated: {prices.index[-1].strftime('%Y-%m-%d')}")
 
-    normalized = normalize(prices)
+    _render_return_metrics(prices[SP500_TICKER])
+
+    normalized = normalize(chart_prices)
     series = normalized[SP500_TICKER]
 
     fig = go.Figure()
