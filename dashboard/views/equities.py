@@ -9,32 +9,17 @@ from views.common import (
     DATA_DIR,
     DEFAULT_END_DATE,
     DEFAULT_START_DATE,
+    LOOKBACK_YEARS,
+    chart_layout,
+    date_range_error,
     download_data,
     get_available_date_bounds,
+    lookback_start,
     preprocess,
 )
 
 SP500_TICKER = "^GSPC"
 SP500_BUNDLED_FILE = "GSPC.csv"
-LOOKBACK_YEARS = {
-    "1y": 1,
-    "3y": 3,
-    "5y": 5,
-    "10y": 10,
-    "20y": 20,
-    "30y": 30,
-    "max": None,
-}
-
-
-def _lookback_start(end: date, years: int | None, earliest: date) -> date:
-    if years is None:
-        return earliest
-    try:
-        start = end.replace(year=end.year - years)
-    except ValueError:
-        start = end.replace(year=end.year - years, month=2, day=28)
-    return max(earliest, start)
 
 
 def _simple_return(last: float, base: float) -> float | None:
@@ -177,7 +162,7 @@ def render() -> None:
         end = DEFAULT_END_DATE
         years = LOOKBACK_YEARS[st.session_state.lookback]
         st.session_state.end_date = end
-        st.session_state.start_date = _lookback_start(end, years, earliest_date)
+        st.session_state.start_date = lookback_start(end, years, earliest_date)
 
     if "lookback" not in st.session_state:
         st.session_state.lookback = "1y"
@@ -204,12 +189,9 @@ def render() -> None:
             key="end_date",
         )
 
-    if start_date > end_date:
-        st.warning("Start date must be on or before the end date.")
-        return
-
-    if start_date == end_date:
-        st.warning("Date range must span at least two distinct dates.")
+    range_error = date_range_error(start_date, end_date)
+    if range_error:
+        st.warning(range_error)
         return
 
     metrics_start = max(earliest_date, end_date - timedelta(days=365 + 21))
@@ -255,13 +237,13 @@ def render() -> None:
         )
     )
     fig.update_layout(
-        title="S&P 500",
-        height=450,
-        template="plotly_white",
-        yaxis_title="Index level",
-        xaxis_title="Date",
-        hovermode="x unified",
-        margin=dict(t=60, b=40),
+        **chart_layout(
+            title="S&P 500",
+            height=450,
+            yaxis_title="Index level",
+            xaxis_title="Date",
+            hovermode="x unified",
+        )
     )
 
     st.plotly_chart(fig, use_container_width=True)

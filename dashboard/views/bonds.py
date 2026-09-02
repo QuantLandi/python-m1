@@ -6,8 +6,12 @@ import streamlit as st
 
 from views.common import (
     DEFAULT_END_DATE,
+    LOOKBACK_YEARS,
+    chart_layout,
+    date_range_error,
     download_fred_data,
     get_available_date_bounds,
+    lookback_start,
 )
 
 CHART_COLOR = "#FF962F"
@@ -44,27 +48,7 @@ ALL_FRED_IDS = tuple(series_id for series_id, _, _ in TREASURY_SERIES) + tuple(
 
 DEFAULT_TREASURY_TENORS = ("3M", "2Y", "10Y", "30Y")
 
-LOOKBACK_YEARS = {
-    "1y": 1,
-    "3y": 3,
-    "5y": 5,
-    "10y": 10,
-    "20y": 20,
-    "30y": 30,
-    "max": None,
-}
-
 FRED_EARLIEST = date(1953, 4, 1)
-
-
-def _lookback_start(end: date, years: int | None, earliest: date) -> date:
-    if years is None:
-        return earliest
-    try:
-        start = end.replace(year=end.year - years)
-    except ValueError:
-        start = end.replace(year=end.year - years, month=2, day=28)
-    return max(earliest, start)
 
 
 def _orange_gradient(count: int) -> list[str]:
@@ -108,7 +92,7 @@ def render() -> None:
         end = DEFAULT_END_DATE
         years = LOOKBACK_YEARS[st.session_state.bonds_lookback]
         st.session_state.bonds_end_date = end
-        st.session_state.bonds_start_date = _lookback_start(end, years, earliest_date)
+        st.session_state.bonds_start_date = lookback_start(end, years, earliest_date)
 
     if "bonds_lookback" not in st.session_state:
         st.session_state.bonds_lookback = "5y"
@@ -149,11 +133,9 @@ def render() -> None:
             key="treasury_tenors",
         )
 
-    if start_date > end_date:
-        st.warning("Start date must be on or before the end date.")
-        return
-    if start_date == end_date:
-        st.warning("Date range must span at least two distinct dates.")
+    range_error = date_range_error(start_date, end_date)
+    if range_error:
+        st.warning(range_error)
         return
 
     yields = download_fred_data(ALL_FRED_IDS, start_date, end_date, use_live=True)
@@ -202,11 +184,10 @@ def render() -> None:
                 ]
             )
             fig.update_layout(
-                title=f"OECD 10-year yields snapshot ({as_of_text})",
-                yaxis_title="Yield (%)",
-                height=420,
-                template="plotly_white",
-                margin=dict(t=60, b=40),
+                **chart_layout(
+                    title=f"OECD 10-year yields snapshot ({as_of_text})",
+                    yaxis_title="Yield (%)",
+                )
             )
             st.plotly_chart(fig, use_container_width=True)
 
@@ -228,13 +209,12 @@ def render() -> None:
                     )
                 )
             fig.update_layout(
-                title="OECD 10-year yields over time",
-                yaxis_title="Yield (%)",
-                xaxis_title="Date",
-                height=420,
-                template="plotly_white",
-                hovermode="x unified",
-                margin=dict(t=60, b=40),
+                **chart_layout(
+                    title="OECD 10-year yields over time",
+                    yaxis_title="Yield (%)",
+                    xaxis_title="Date",
+                    hovermode="x unified",
+                )
             )
             st.plotly_chart(fig, use_container_width=True)
 
@@ -263,13 +243,12 @@ def render() -> None:
             ]
         )
         fig.update_layout(
-            title=f"U.S. Treasury yield curve snapshot ({as_of_text})",
-            xaxis_title="Tenor",
-            yaxis_title="Yield (%)",
-            xaxis=dict(type="category", dtick=1),
-            height=420,
-            template="plotly_white",
-            margin=dict(t=60, b=40),
+            **chart_layout(
+                title=f"U.S. Treasury yield curve snapshot ({as_of_text})",
+                xaxis_title="Tenor",
+                yaxis_title="Yield (%)",
+                xaxis=dict(type="category", dtick=1),
+            )
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -299,13 +278,12 @@ def render() -> None:
                     )
                 )
             fig.update_layout(
-                title="U.S. Treasury yield curve over time",
-                yaxis_title="Yield (%)",
-                xaxis_title="Date",
-                height=420,
-                template="plotly_white",
-                hovermode="x unified",
-                margin=dict(t=60, b=40),
+                **chart_layout(
+                    title="U.S. Treasury yield curve over time",
+                    yaxis_title="Yield (%)",
+                    xaxis_title="Date",
+                    hovermode="x unified",
+                )
             )
             st.plotly_chart(fig, use_container_width=True)
 

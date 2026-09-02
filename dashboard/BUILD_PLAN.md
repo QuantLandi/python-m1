@@ -84,7 +84,7 @@ Build in **6 phases**. Each phase ends with something runnable or testable.
 
 | File | Contents |
 |------|----------|
-| `pyproject.toml` | `streamlit`, `pandas`, `numpy`, `plotly`, `yfinance`, `matplotlib`, `requests`, `pytest` |
+| `pyproject.toml` | `streamlit`, `pandas`, `numpy`, `plotly`, `yfinance`, `requests`, `pytest` |
 | `dashboard.py` | `st.set_page_config` + `st.navigation` wiring 4 pages |
 | `views/equities.py` … `currencies.py` | `render()` with header + placeholder |
 | `views/common.py` | Empty module + docstring listing planned functions |
@@ -106,8 +106,8 @@ Implement in `views/common.py`, in order:
 
 1. `DATA_CACHE_DIR`, `_cache_path()`
 2. `download_data(tickers, start, end)` — `yfinance` + CSV cache merge
-3. `load_data()`, `preprocess()`, `ensure_datetime_index()`
-4. `normalize()` — cumulative return index starting at 1
+3. `preprocess()`
+4. Shared `lookback_start()` / `date_range_error()` / `chart_layout()`
 
 **Exit criterion:** equities tab shows one Plotly line chart of live S&P 500 (`^GSPC`) prices.
 
@@ -192,7 +192,7 @@ Uses `pandas_datareader` (`DataReader(..., "fred")`) — **no FRED API key**.
 
 ### Phase 6 — Tests, polish, deploy
 
-1. `tests/test_loaders.py` — smoke tests on `preprocess`, `normalize`, `classify_regime`
+1. `tests/test_loaders.py` — smoke tests on `preprocess`, disk fallback, date helpers
 2. `static/` fonts + full `.streamlit/config.toml` (match reference branding)
 3. Bundled `data/` CSVs for offline demo
 4. Streamlit Cloud deploy
@@ -269,7 +269,6 @@ Draft items in `project/mcq/project-final-items.md` during sessions 8–11. Run 
 
 ```toml
 dependencies = [
-    "matplotlib>=3.9",
     "numpy>=2.5",
     "pandas>=3.0",
     "pandas-datareader>=0.10",

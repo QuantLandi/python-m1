@@ -18,7 +18,14 @@ Requires [uv](https://docs.astral.sh/uv/). From this folder:
 uv sync
 ```
 
-## Launch (local)
+## Tests
+
+From this folder:
+
+```bash
+uv run pytest
+```
+
 
 From this folder:
 
@@ -41,12 +48,12 @@ See [DEPLOY.md](DEPLOY.md). On Streamlit Community Cloud, set **Main file path**
 ## Milestones
 
 - [x] **Phase 0** — App shell with four navigable tabs
-- [x] **Phase 1** — Data pipeline in `views/common.py` (`download_data`, `preprocess`, `normalize`)
+- [x] **Phase 1** — Data pipeline in `views/common.py` (`download_data`, `preprocess`)
 - [x] **Phase 2** — Equities tab: S&P 500 levels, lookback, trailing and calendar returns (scope frozen)
 - [ ] **Phase 3** — Regime overlays and badges (deferred)
 - [x] **Phase 4** — Bonds tab: US curve + OECD 10Y (pandas_datareader / FRED; scope frozen)
 - [ ] **Phase 5** — Commodities and Currencies tabs
-- [ ] **Phase 6** — Tests, polish, Streamlit Cloud deploy
+- [x] **Phase 6** — Tests, polish, Streamlit Cloud deploy
 
 See [BUILD_PLAN.md](BUILD_PLAN.md) for the full instructor build plan.
 
@@ -55,7 +62,8 @@ See [BUILD_PLAN.md](BUILD_PLAN.md) for the full instructor build plan.
 | Path | Purpose |
 |------|---------|
 | `dashboard.py` | Entry point — Streamlit navigation |
-| `views/common.py` | Shared loaders, caching, regime helpers |
+| `views/common.py` | Shared loaders, caching, lookback and chart helpers |
+| `tests/` | Smoke tests for loaders and date helpers |
 | `views/equities.py` | Stocks tab (S&P 500 snapshot) |
 | `views/bonds.py` | Bonds tab (Treasury curve + OECD 10Y) |
 | `views/commodities.py` | Commodities tab |

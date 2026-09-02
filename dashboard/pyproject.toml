@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "Cross-Asset Market Monitor — PGE M1 Python for Finance project"
 requires-python = ">=3.12"
 dependencies = [
-    "matplotlib>=3.9",
     "numpy>=2.5",
     "pandas>=3.0",
     "pandas-datareader>=0.11.1",
@@ -16,3 +15,7 @@ dependencies = [
 
 [dependency-groups]
 dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

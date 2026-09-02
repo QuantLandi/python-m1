@@ -11,29 +11,61 @@ import pandas_datareader.data as web
 import streamlit as st
 import yfinance as yf
 
-from paths import DATA_CACHE_DIR, DATA_DIR, DASHBOARD_DIR
-
-APP_DIR = DASHBOARD_DIR
+from paths import DATA_CACHE_DIR, DATA_DIR
 
 DEFAULT_START_DATE = date(1927, 12, 30)  # ^GSPC bundled history start; used if CSV missing
 DEFAULT_END_DATE = date.today()
 
+LOOKBACK_YEARS = {
+    "1y": 1,
+    "3y": 3,
+    "5y": 5,
+    "10y": 10,
+    "20y": 20,
+    "30y": 30,
+    "max": None,
+}
+
+
+def lookback_start(end: date, years: int | None, earliest: date) -> date:
+    """Shift `end` back by `years`, clamped to `earliest`. `None` years means max history."""
+    if years is None:
+        return earliest
+    try:
+        start = end.replace(year=end.year - years)
+    except ValueError:
+        # 29 Feb in a non-leap target year (e.g. 2024-02-29 minus 1 year).
+        start = end.replace(year=end.year - years, month=2, day=28)
+    return max(earliest, start)
+
+
+def date_range_error(start_date: date, end_date: date) -> str | None:
+    """Return a warning message if the selected range is invalid."""
+    if start_date > end_date:
+        return "Start date must be on or before the end date."
+    if start_date == end_date:
+        return "Date range must span at least two distinct dates."
+    return None
+
+
+def chart_layout(**kwargs) -> dict:
+    """Default Plotly layout shared by the tabs."""
+    layout = dict(
+        height=420,
+        template="plotly_white",
+        margin=dict(t=60, b=40),
+    )
+    layout.update(kwargs)
+    return layout
+
 
 def _storage_filename(symbol: str) -> str:
-    """Filesystem-safe name for cache and bundled CSV files."""
+    """Filesystem-safe name: Yahoo tickers like ^GSPC cannot be filenames."""
     return symbol.replace("^", "").replace("=", "_")
 
 
 def _cache_path(symbol: str) -> Path:
     return DATA_CACHE_DIR / f"{_storage_filename(symbol)}.csv"
-
-
-def _legacy_paths(symbol: str) -> tuple[Path, ...]:
-    """Older files that used the raw ticker in the filename."""
-    return (
-        DATA_DIR / f"{symbol}.csv",
-        DATA_CACHE_DIR / f"{symbol}.csv",
-    )
 
 
 def _read_price_csv(path: Path, symbol: str) -> pd.Series | None:
@@ -45,45 +77,13 @@ def _read_price_csv(path: Path, symbol: str) -> pd.Series | None:
     return frame[column].rename(symbol)
 
 
-def _bundled_candidates(symbol: str) -> tuple[Path, ...]:
-    """All locations where bundled CSVs may live (Cloud cwd is often repo root)."""
-    name = f"{_storage_filename(symbol)}.csv"
-    return (
-        DATA_DIR / name,
-        Path.cwd() / "dashboard" / "data" / name,
-        Path.cwd() / "data" / name,
-        *_legacy_paths(symbol),
-    )
-
-
-def _cache_candidates(symbol: str) -> tuple[Path, ...]:
-    name = f"{_storage_filename(symbol)}.csv"
-    return (
-        _cache_path(symbol),
-        Path.cwd() / "dashboard" / "data_cache" / name,
-        Path.cwd() / "data_cache" / name,
-    )
-
-
-def _read_first_available_csv(paths: tuple[Path, ...], symbol: str) -> pd.Series | None:
-    seen: set[Path] = set()
-    for path in paths:
-        resolved = path.resolve()
-        if resolved in seen:
-            continue
-        seen.add(resolved)
-        part = _read_price_csv(path, symbol)
-        if part is not None:
-            return part
-    return None
-
-
 def _load_bundled_series(symbol: str) -> pd.Series | None:
-    return _read_first_available_csv(_bundled_candidates(symbol), symbol)
+    # Offline copy shipped in dashboard/data/ — not the process working directory.
+    return _read_price_csv(DATA_DIR / f"{_storage_filename(symbol)}.csv", symbol)
 
 
 def _load_cached_series(symbol: str) -> pd.Series | None:
-    return _read_first_available_csv(_cache_candidates(symbol), symbol)
+    return _read_price_csv(_cache_path(symbol), symbol)
 
 
 def _load_stored_series(symbol: str) -> pd.Series | None:
@@ -124,10 +124,8 @@ def get_available_date_bounds(symbol: str) -> tuple[date, date] | None:
     # Bundled CSV holds full history; cache may only contain recent Yahoo fetches (~2007+).
     if bundled is not None:
         earliest = bundled.index.min().date()
-    elif cached is not None:
-        earliest = cached.index.min().date()
     else:
-        earliest = DEFAULT_START_DATE
+        earliest = cached.index.min().date()
 
     latest_candidates = [
         s.index.max().date()
@@ -185,6 +183,7 @@ def _fetch_live_prices(
             frames.append(series.rename(symbol))
             _merge_cache(symbol, series)
     except Exception:
+        # Network or Yahoo errors must not crash the page; callers fall back to disk.
         frames = []
 
     if not frames:
@@ -312,39 +311,8 @@ def download_data(
     return fetched.loc[mask]
 
 
-def load_data(file_path: str) -> pd.DataFrame:
-    """Load a price series stored on disk."""
-    data = pd.read_csv(file_path, index_col=0, parse_dates=True)
-    data.index = data.index.tz_localize(None)
-    return data
-
-
 def preprocess(data: pd.DataFrame) -> pd.DataFrame:
     """Forward-fill and remove missing observations."""
     if data.empty:
         return data
     return data.ffill().dropna()
-
-
-def ensure_datetime_index(data: pd.DataFrame) -> pd.DataFrame:
-    """Return a frame with a DatetimeIndex, even when the input is empty."""
-    if data.empty:
-        if isinstance(data.index, pd.DatetimeIndex):
-            return data
-        safe = data.copy()
-        safe.index = pd.DatetimeIndex([], name="Date")
-        return safe
-    if isinstance(data.index, pd.DatetimeIndex):
-        return data
-    safe = data.copy()
-    safe.index = pd.to_datetime(safe.index, errors="coerce")
-    safe = safe[~safe.index.isna()]
-    return safe
-
-
-def normalize(prices: pd.DataFrame) -> pd.DataFrame:
-    """Convert a price series into cumulative returns starting at 1."""
-    if prices.empty:
-        return prices
-    returns = prices.pct_change().fillna(0)
-    return (1 + returns).cumprod()
