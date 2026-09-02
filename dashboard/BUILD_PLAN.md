@@ -14,7 +14,7 @@ Private instructor plan for the M1 project deliverable. Students receive a separ
 |----------|--------|
 | Grading | **Not graded** — accountability via **MCQ final** (project-specific code-reading questions) |
 | Work mode | **Individual**; same brief for Lille & Sophia |
-| Demo | **Mandatory** live demo in session 12 (2–3 min) |
+| Demo | **None** — session 12 is a Cloud walkthrough; accountability is the final MCQ |
 | Scope | **4 tabs** (Stocks, Bonds, Commodities, Currencies). **No regime overlays.** |
 | Data | Live `yfinance` + **FRED via pandas_datareader** (no API key); bundled `data/` CSV fallbacks |
 | Deploy | **Streamlit Cloud** (public URL) |
@@ -206,9 +206,9 @@ G8 **spot-cross matrix**, not a heatmap or indexed-score dashboard.
 2. `.streamlit/config.toml` — dark theme, orange accent (no custom font bundle)
 3. Bundled `data/` CSVs: `GSPC.csv`, commodity futures (`GC_F.csv`, …), Treasury (`DGS*`), OECD 10Y (`IRLTLT01*`), FX USD legs (`EURUSD_X.csv`, …)
 4. Streamlit Cloud deploy
-5. README: deploy steps + demo checklist
+5. README: deploy steps
 
-**Exit criterion:** public URL; student demos 2 tabs + explains one function.
+**Exit criterion:** class has walked through Streamlit Cloud (main file `dashboard/dashboard.py`, Python 3.12). No student demos.
 
 **Session:** 12.
 
@@ -231,15 +231,17 @@ Phase 3 is omitted.
 
 ## Session map (8–12)
 
+Live-code, in-class only. Detail: [project/session-plans/sessions-08-12.md](../project/session-plans/sessions-08-12.md).
+
 | Session | Phase(s) | Student outcome |
 |--------:|----------|-----------------|
-| 8 | 0, 1 | App runs; equities shows one live chart |
-| 9 | 2 | Equities tab complete (S&P 500 snapshot) |
-| 10 | 4 | Bonds tab |
-| 11 | 5 | Commodities + Currencies tabs |
-| 12 | 6 | Deployed app + live demos |
+| 8 | 0, 1 | Stub runs; one S&P 500 chart |
+| 9 | 2 | Equities tab complete (**minimum**) |
+| 10 | 4 | Bonds tab (**minimum**) |
+| 11 | 5 | **Stretch:** commodities, then FX; or polish min path |
+| 12 | 6 | Cloud walkthrough as a class; no demos |
 
-Assume **30–60 min prep** before each session (linked from `README.md`).
+**Minimum path:** Stocks + Bonds + seeing Cloud deploy. **Stretch:** Commodities and/or Currencies. No homework by design; instructor still dry-runs before each session.
 
 ---
 
@@ -309,7 +311,7 @@ by Enes SAHIN. We reuse the overall architecture and design patterns; implementa
 | Risk | Mitigation |
 |------|------------|
 | Reference too large for beginners | Equities stays a slim S&P 500 view; richer analytics live on other tabs |
-| AI-generated submissions | Ungraded + MCQ + live demo (explain one function) |
+| AI-generated submissions | Ungraded + MCQ (explain every line) |
 | FRED key friction | Use `pandas_datareader` public FRED feed (no key) |
 | yfinance / FRED outages | Bundled `data/` (GSPC + futures `*_F.csv` + FRED + FX `*_X.csv`); Cloud often cannot reach Yahoo |
 | Deploy failures on session 12 | Front-load deploy walkthrough; troubleshoot in room |
@@ -326,4 +328,4 @@ by Enes SAHIN. We reuse the overall architecture and design patterns; implementa
 
 ## Next step
 
-Instructor product work is **done**. Next: Phase-0 student template, syllabus / root README links, and MCQ drafts in `project/mcq/` — not further dashboard features.
+Instructor product work is **done**. Teaching script: `project/session-plans/sessions-08-12.md`. Next: Phase-0 student template, syllabus / root README links, and MCQ drafts in `project/mcq/`.
