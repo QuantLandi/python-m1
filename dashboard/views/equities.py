@@ -80,6 +80,8 @@ def _render_return_metrics(prices: pd.Series) -> None:
     last_day = prices.dropna().index[-1]
     week_start = last_day - pd.Timedelta(days=int(last_day.weekday()))
     month_start = last_day.replace(day=1)
+    quarter_month = ((last_day.month - 1) // 3) * 3 + 1
+    quarter_start = last_day.replace(month=quarter_month, day=1)
     year_start = last_day.replace(month=1, day=1)
 
     trailing = {
@@ -92,6 +94,7 @@ def _render_return_metrics(prices: pd.Series) -> None:
     calendar = {
         "Week to date": _since_return(prices, week_start),
         "Month to date": _since_return(prices, month_start),
+        "Quarter to date": _since_return(prices, quarter_start),
         "Year to date": _since_return(prices, year_start),
     }
 
