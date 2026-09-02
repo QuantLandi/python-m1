@@ -42,9 +42,9 @@ See [DEPLOY.md](DEPLOY.md). On Streamlit Community Cloud, set **Main file path**
 
 - [x] **Phase 0** — App shell with four navigable tabs
 - [x] **Phase 1** — Data pipeline in `views/common.py` (`download_data`, `preprocess`, `normalize`)
-- [ ] **Phase 2** — Equities tab complete (charts, metrics, CSV export)
-- [ ] **Phase 3** — Regime overlays and badges
-- [ ] **Phase 4** — Bonds tab (FRED API)
+- [x] **Phase 2** — Equities tab: S&P 500 levels, lookback, trailing and calendar returns (scope frozen)
+- [ ] **Phase 3** — Regime overlays and badges (deferred)
+- [x] **Phase 4** — Bonds tab: US curve + OECD 10Y (pandas_datareader / FRED; scope frozen)
 - [ ] **Phase 5** — Commodities and Currencies tabs
 - [ ] **Phase 6** — Tests, polish, Streamlit Cloud deploy
 
@@ -56,8 +56,8 @@ See [BUILD_PLAN.md](BUILD_PLAN.md) for the full instructor build plan.
 |------|---------|
 | `dashboard.py` | Entry point — Streamlit navigation |
 | `views/common.py` | Shared loaders, caching, regime helpers |
-| `views/equities.py` | Stocks tab |
-| `views/bonds.py` | Bonds tab |
+| `views/equities.py` | Stocks tab (S&P 500 snapshot) |
+| `views/bonds.py` | Bonds tab (Treasury curve + OECD 10Y) |
 | `views/commodities.py` | Commodities tab |
 | `views/currencies.py` | Currencies tab |
 | `data/` | Bundled CSV fallbacks (offline mode) |

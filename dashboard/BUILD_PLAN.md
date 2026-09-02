@@ -14,7 +14,7 @@ Private instructor plan for the M1 project deliverable. Students receive a separ
 | Work mode | **Individual**; same brief for Lille & Sophia |
 | Demo | **Mandatory** live demo in session 12 (2–3 min) |
 | Scope | **4 tabs** (Stocks, Bonds, Commodities, Currencies) + **regime overlays** |
-| Data | Live `yfinance` + **FRED** (bonds); bundled `data/` CSV fallbacks |
+| Data | Live `yfinance` + **FRED via pandas_datareader** (no API key); bundled `data/` CSV fallbacks |
 | Deploy | **Streamlit Cloud** (public URL) |
 | AI policy | Same as course README — OK if you can explain every line |
 | Differentiation | None — one project for everyone |
@@ -62,15 +62,15 @@ uv run streamlit run dashboard.py
 |-----------|---------|-----------|
 | App shell | `dashboard.py` | 4-tab `st.navigation` works |
 | Shared layer | `views/common.py` | Loaders, cache, regime engine, Plotly helpers |
-| Stocks tab | `views/equities.py` | Full analytics + regime toggle |
-| Bonds tab | `views/bonds.py` | FRED yield curve + spreads |
+| Stocks tab | `views/equities.py` | S&P 500 levels + trailing/calendar returns (scope frozen; see below) |
+| Bonds tab | `views/bonds.py` | US Treasury curve + OECD 10Y (pandas_datareader / FRED; scope frozen) |
 | Commodities tab | `views/commodities.py` | Metals, energy, grains charts |
 | Currencies tab | `views/currencies.py` | FX pairs + correlation heatmap |
 | Offline fallback | `data/` | App works without internet |
 | Cache | `data_cache/` | Live fetches persist between runs |
 | Theme | `.streamlit/config.toml`, `static/` | Dark theme, orange accent |
 | Tests | `tests/test_loaders.py` | Smoke tests on core helpers |
-| Deploy | Streamlit Cloud | Public URL + `FRED_API_KEY` in secrets |
+| Deploy | Streamlit Cloud | Public URL |
 
 ---
 
@@ -109,24 +109,27 @@ Implement in `views/common.py`, in order:
 3. `load_data()`, `preprocess()`, `ensure_datetime_index()`
 4. `normalize()` — cumulative return index starting at 1
 
-**Exit criterion:** equities tab shows one Plotly line chart of live AAPL prices.
+**Exit criterion:** equities tab shows one Plotly line chart of live S&P 500 (`^GSPC`) prices.
 
 **Session:** 8.
 
 ---
 
-### Phase 2 — Equities tab (full)
+### Phase 2 — Equities tab (S&P 500 snapshot)
 
-**Goal:** first complete tab — template for the other three.
+**Goal:** first complete tab. **This scope is frozen** — do not expand toward Enes’ multi-name watchlist.
 
-1. `STOCK_TICKERS`, `COLOR_PALETTE` constants
-2. Sidebar: multiselect, date range
-3. `load_equity_prices()` (cached wrapper)
-4. `compute_metrics()` — returns, vol, Sharpe, drawdown
-5. Plotly charts: normalized performance, rolling vol, drawdown, correlation heatmap
-6. Top Gainers cards, metrics table, CSV download
+The Stocks tab is an **index snapshot**, not a relative-performance dashboard:
 
-**Exit criterion:** equities tab matches reference feature set (without regime toggle).
+1. Single series: `^GSPC` (S&P 500), live `yfinance` with bundled `data/GSPC.csv` fallback
+2. Sidebar: lookback presets (`1y` … `max`) plus start/end dates
+3. Trailing returns (1d / 7d / 30d / 90d / 1y) and calendar returns (WTD / MTD / QTD / YTD)
+4. One Plotly **index-level** chart (not normalized multi-asset)
+5. Fetch extra history so 1-year trailing metrics still work on a short chart window
+
+**Out of scope** (reference repo only; do not implement): ticker multiselect, Top Gainers, normalized overlay, rolling vol / drawdown tabs, correlation heatmap, Sharpe table, CSV download, regime toggle on this tab.
+
+**Exit criterion:** lookback + date range drive the chart; both return tables render; bundled fallback works if Yahoo is down.
 
 **Session:** 9.
 
@@ -142,39 +145,44 @@ In `views/common.py`:
 2. `classify_regime(growth, inflation, vol)`
 3. `get_market_regime_data()` — ^GSPC, ^VIX, CL=F proxies
 4. `add_regime_shading()`, `render_regime_status_panel()`, `render_regime_legend()`
-5. Wire regime toggle on equities tab
+5. Wire regime toggle on **commodities or currencies** (not equities or bonds)
 
-**Exit criterion:** toggle on → shaded chart + regime badge in sidebar.
+**Exit criterion:** toggle on → shaded chart + regime badge in sidebar on a non-equities tab.
 
 **Session:** 10 (first half).
 
 ---
 
-### Phase 4 — Bonds tab (+ FRED)
+### Phase 4 — Bonds tab (yield curves)
 
-**Goal:** second tab with live macro data.
+**Goal:** second tab with live FRED yields. **This scope is frozen.**
 
-1. FRED API helper (env var `FRED_API_KEY`)
-2. US Treasury yield curve chart
-3. OECD 10Y peer comparison (CSV endpoint)
-4. Spread / vol surface views (as in reference)
-5. Reuse regime overlay from Phase 3
+Uses `pandas_datareader` (`DataReader(..., "fred")`) — **no FRED API key**.
 
-Document FRED key setup in README (local `.env` + Streamlit Cloud secrets).
+1. `download_fred_data()` in `views/common.py` — same cache/bundled fallback as Yahoo prices
+2. Four charts only:
+   - latest OECD 10Y bar chart
+   - latest US Treasury curve by tenor
+   - OECD 10Y history
+   - US Treasury history
+3. Sidebar lookback + start/end dates (keys prefixed `bonds_` so they do not clash with Stocks)
 
-**Exit criterion:** bonds tab loads live yields; works offline via `data/` fallback.
+**Out of scope:** series multiselect, top movers, spreads, vol surface, correlation, CSV download, regime overlay, FRED API key.
 
-**Session:** 10 (second half).
+**Exit criterion:** all four charts render from live FRED; cache works on a second run.
+
+**Session:** 10.
 
 ---
 
 ### Phase 5 — Commodities & Currencies tabs
 
-**Goal:** copy the equities pattern; prove modularity.
+**Goal:** remaining asset-class tabs; reuse `common.py` (do not clone the slim equities snapshot).
 
 1. `commodities.py` — metals, energy, grains ticker maps + tab-specific charts
 2. `currencies.py` — FX pairs, normalized scores, correlation heatmap
 3. Both reuse `common.py` helpers (no duplicated download logic)
+4. Regime overlay optional, following Phase 3 — still not on equities
 
 **Exit criterion:** all 4 tabs functional with live data.
 
@@ -187,7 +195,7 @@ Document FRED key setup in README (local `.env` + Streamlit Cloud secrets).
 1. `tests/test_loaders.py` — smoke tests on `preprocess`, `normalize`, `classify_regime`
 2. `static/` fonts + full `.streamlit/config.toml` (match reference branding)
 3. Bundled `data/` CSVs for offline demo
-4. Streamlit Cloud deploy; `FRED_API_KEY` in secrets
+4. Streamlit Cloud deploy
 5. README: deploy steps + demo checklist
 
 **Exit criterion:** public URL; student demos 2 tabs + explains one function.
@@ -217,7 +225,7 @@ Phases 4 and 5 can overlap once Phase 3 is done.
 | Session | Phase(s) | Student outcome |
 |--------:|----------|-----------------|
 | 8 | 0, 1 | App runs; equities shows one live chart |
-| 9 | 2 | Equities tab complete |
+| 9 | 2 | Equities tab complete (S&P 500 snapshot) |
 | 10 | 3, 4 | Regime overlays + bonds tab |
 | 11 | 5 | Commodities + currencies tabs |
 | 12 | 6 | Deployed app + live demos |
@@ -264,6 +272,7 @@ dependencies = [
     "matplotlib>=3.9",
     "numpy>=2.5",
     "pandas>=3.0",
+    "pandas-datareader>=0.10",
     "plotly>=6.0",
     "requests>=2.32",
     "streamlit>=1.40",
@@ -291,9 +300,9 @@ by Enes SAHIN. We reuse the overall architecture and design patterns; implementa
 
 | Risk | Mitigation |
 |------|------------|
-| Reference too large for beginners | Milestone gates; equities first, then copy pattern |
+| Reference too large for beginners | Equities stays a slim S&P 500 view; richer analytics live on other tabs |
 | AI-generated submissions | Ungraded + MCQ + live demo (explain one function) |
-| FRED key friction | Class setup in session 10; document Streamlit secrets |
+| FRED key friction | Use `pandas_datareader` public FRED feed (no key) |
 | yfinance outages | Bundled `data/` + `data_cache/` fallback |
 | Deploy failures on session 12 | Front-load deploy walkthrough; troubleshoot in room |
 
@@ -304,7 +313,7 @@ by Enes SAHIN. We reuse the overall architecture and design patterns; implementa
 - Root `.gitignore`: add `dashboard/data_cache/`
 - Update `syllabus.md`: replace two-track paragraph with single project + link to `dashboard/README.md`
 - Update root `README.md`: one row pointing to `dashboard/`
-- Never commit FRED API keys or live cache files
+- Never commit live cache files
 
 ---
 

@@ -17,15 +17,9 @@ The app lives in a subdirectory of the instructor repo. Streamlit Cloud runs fro
 
 Streamlit Cloud will detect dependencies from `dashboard/uv.lock` (preferred) or `dashboard/requirements.txt`.
 
-## Secrets (later phases)
+## Secrets
 
-When the bonds tab uses FRED, add in the app **Settings → Secrets**:
-
-```toml
-FRED_API_KEY = "your-key-here"
-```
-
-Never commit API keys to git.
+None required. Bond yields come from FRED via `pandas_datareader` (public feed, no API key).
 
 ## After each push
 

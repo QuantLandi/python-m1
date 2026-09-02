@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Tuple
 
 import pandas as pd
+import pandas_datareader.data as web
 import streamlit as st
 import yfinance as yf
 
@@ -209,6 +210,73 @@ def _fetch_live_prices(
         return pd.DataFrame()
 
     return pd.concat(frames, axis=1).sort_index()
+
+
+@st.cache_data(show_spinner=False, ttl=60 * 60)
+def _fetch_live_fred(
+    series_ids: Tuple[str, ...],
+    start_date: date,
+    end_date: date,
+) -> pd.DataFrame:
+    """Download FRED series via pandas_datareader (no API key). Cached for one hour."""
+    if not series_ids:
+        return pd.DataFrame()
+
+    try:
+        frame = web.DataReader(list(series_ids), "fred", start_date, end_date)
+    except Exception:
+        return pd.DataFrame()
+
+    if frame is None or frame.empty:
+        return pd.DataFrame()
+
+    if isinstance(frame, pd.Series):
+        frame = frame.to_frame(name=series_ids[0])
+
+    frame.index = pd.to_datetime(frame.index).tz_localize(None)
+    for series_id in series_ids:
+        if series_id not in frame.columns:
+            continue
+        series = pd.to_numeric(frame[series_id], errors="coerce").dropna()
+        if series.empty:
+            continue
+        _merge_cache(series_id, series)
+    return frame
+
+
+def download_fred_data(
+    series_ids: Tuple[str, ...],
+    start_date: date,
+    end_date: date,
+    *,
+    use_live: bool = True,
+) -> pd.DataFrame:
+    """Fetch FRED yields, then fall back to cache and bundled CSVs."""
+    if not series_ids:
+        return pd.DataFrame()
+
+    series_ids = tuple(series_ids)
+    live_frame = (
+        _fetch_live_fred(series_ids, start_date, end_date) if use_live else pd.DataFrame()
+    )
+    merged_frames: list[pd.Series] = []
+
+    for series_id in series_ids:
+        live_series = live_frame[series_id] if series_id in live_frame.columns else None
+        if live_series is not None:
+            live_series = pd.to_numeric(live_series, errors="coerce").rename(series_id)
+        series = _merge_live_and_stored(series_id, live_series)
+        if not series.empty:
+            merged_frames.append(series)
+
+    if not merged_frames:
+        return pd.DataFrame()
+
+    fetched = pd.concat(merged_frames, axis=1).sort_index()
+    mask = (fetched.index >= pd.Timestamp(start_date)) & (
+        fetched.index <= pd.Timestamp(end_date)
+    )
+    return fetched.loc[mask]
 
 
 def download_data(
