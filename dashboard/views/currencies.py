@@ -1,12 +1,14 @@
 from datetime import date, timedelta
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
 from views.common import (
     DEFAULT_END_DATE,
     LOOKBACK_YEARS,
     RETURNS_TABLE_CSS,
+    chart_layout,
     date_range_error,
     download_data,
     get_available_date_bounds,
@@ -49,10 +51,10 @@ def spot_cross_matrix(usd_per: pd.Series) -> pd.DataFrame:
     return pd.DataFrame(values).T.loc[names, names]
 
 
-def last_usd_per_units(prices: pd.DataFrame) -> tuple[pd.Timestamp, pd.Series] | None:
-    """Last aligned USD-per-unit vector from USD-leg closes."""
+def usd_per_paths(prices: pd.DataFrame) -> pd.DataFrame:
+    """Daily USD amount equivalent to 1 unit of each currency."""
     if prices.empty:
-        return None
+        return pd.DataFrame()
 
     usd_paths: dict[str, pd.Series] = {"USD": pd.Series(1.0, index=prices.index)}
     for currency, (ticker, convention) in USD_LEGS.items():
@@ -63,11 +65,21 @@ def last_usd_per_units(prices: pd.DataFrame) -> tuple[pd.Timestamp, pd.Series] |
             continue
         usd_paths[currency] = series.map(lambda price: usd_per_unit(price, convention))
 
-    aligned = pd.DataFrame(usd_paths).ffill().dropna(how="any")
+    return pd.DataFrame(usd_paths).ffill().dropna(how="any")
+
+
+def last_usd_per_units(prices: pd.DataFrame) -> tuple[pd.Timestamp, pd.Series] | None:
+    """Last aligned USD-per-unit vector from USD-leg closes."""
+    aligned = usd_per_paths(prices)
     if aligned.empty:
         return None
     last_date = aligned.index[-1]
     return last_date, aligned.loc[last_date]
+
+
+def pair_rate(usd_paths: pd.DataFrame, numerator: str, denominator: str) -> pd.Series:
+    """Units of denominator per 1 unit of numerator."""
+    return (usd_paths[numerator] / usd_paths[denominator]).rename(f"{numerator}/{denominator}")
 
 
 def _format_rate(value: float, quote: str) -> str:
@@ -145,6 +157,21 @@ def render() -> None:
             max_value=DEFAULT_END_DATE,
             key="currencies_end_date",
         )
+        if "fx_numerator" not in st.session_state:
+            st.session_state.fx_numerator = "EUR"
+        numerator = st.selectbox(
+            "Numerator (base)",
+            options=list(CURRENCIES),
+            key="fx_numerator",
+        )
+        denom_options = [ccy for ccy in CURRENCIES if ccy != numerator]
+        if st.session_state.get("fx_denominator") not in denom_options:
+            st.session_state.fx_denominator = "USD" if "USD" in denom_options else denom_options[0]
+        denominator = st.selectbox(
+            "Denominator (quote)",
+            options=denom_options,
+            key="fx_denominator",
+        )
 
     range_error = date_range_error(start_date, end_date)
     if range_error:
@@ -171,12 +198,13 @@ def render() -> None:
     if bundled_ends and prices.index[-1].date() <= max(bundled_ends) < end_date:
         st.info("Showing bundled FX data (live Yahoo Finance fetch unavailable).")
 
-    snapshot = last_usd_per_units(prices)
-    if snapshot is None:
+    aligned = usd_per_paths(prices)
+    if aligned.empty:
         st.error("Could not align USD legs into a complete currency matrix.")
         return
 
-    as_of, usd_per = snapshot
+    as_of = aligned.index[-1]
+    usd_per = aligned.loc[as_of]
     missing = [ccy for ccy in CURRENCIES if ccy not in usd_per.index]
     if missing:
         st.warning("Missing USD legs for: " + ", ".join(missing))
@@ -185,6 +213,38 @@ def render() -> None:
     matrix = spot_cross_matrix(usd_per.loc[ordered])
 
     st.sidebar.caption(f"Last updated: {as_of.strftime('%Y-%m-%d')}")
+
+    pair_name = f"{numerator}/{denominator}"
+    chart_mask = (aligned.index >= pd.Timestamp(start_date)) & (
+        aligned.index <= pd.Timestamp(end_date)
+    )
+    series = pair_rate(aligned.loc[chart_mask], numerator, denominator)
+    if series.empty:
+        st.warning("No observations in the selected date range.")
+    else:
+        hover_fmt = ",.2f" if denominator == "JPY" else ",.4f"
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=series.index,
+                y=series,
+                mode="lines",
+                name=pair_name,
+                line=dict(width=2, color="#FF962F"),
+                hovertemplate=f"%{{y:{hover_fmt}}}<br>%{{x|%Y-%m-%d}}<extra>{pair_name}</extra>",
+            )
+        )
+        fig.update_layout(
+            **chart_layout(
+                title=pair_name,
+                height=450,
+                yaxis_title=f"{denominator} per 1 {numerator}",
+                xaxis_title="Date",
+                hovermode="x unified",
+            )
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
     st.subheader(f"Spot matrix — {as_of.strftime('%Y-%m-%d')}")
     _show_spot_matrix(matrix)
 

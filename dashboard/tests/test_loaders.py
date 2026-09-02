@@ -12,7 +12,7 @@ from views.common import (
     normalize,
     preprocess,
 )
-from views.currencies import last_usd_per_units, spot_cross_matrix, usd_per_unit
+from views.currencies import last_usd_per_units, pair_rate, spot_cross_matrix, usd_per_unit
 
 
 def test_storage_filename_strips_yahoo_prefix() -> None:
@@ -135,3 +135,26 @@ def test_last_usd_per_units_aligns_legs() -> None:
     assert abs(usd_per["EUR"] - 1.12) < 1e-12
     assert abs(usd_per["JPY"] - 1.0 / 148.0) < 1e-12
     assert usd_per["USD"] == 1.0
+
+
+def test_pair_rate_is_numerator_over_denominator() -> None:
+    prices = pd.DataFrame(
+        {
+            "EURUSD=X": [1.10, 1.12],
+            "GBPUSD=X": [1.25, 1.26],
+            "AUDUSD=X": [0.65, 0.66],
+            "NZDUSD=X": [0.58, 0.59],
+            "USDJPY=X": [150.0, 148.0],
+            "USDCHF=X": [0.90, 0.88],
+            "USDCAD=X": [1.35, 1.36],
+        },
+        index=pd.to_datetime(["2024-01-02", "2024-01-03"]),
+    )
+    _, usd_per = last_usd_per_units(prices)
+    paths = pd.DataFrame([usd_per])
+    eurusd = pair_rate(paths, "EUR", "USD").iloc[0]
+    usdjpy = pair_rate(paths, "USD", "JPY").iloc[0]
+    eurjpy = pair_rate(paths, "EUR", "JPY").iloc[0]
+    assert abs(eurusd - 1.12) < 1e-12
+    assert abs(usdjpy - 148.0) < 1e-12
+    assert abs(eurjpy - 1.12 * 148.0) < 1e-9
