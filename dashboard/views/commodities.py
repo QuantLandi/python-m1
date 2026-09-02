@@ -1,10 +1,19 @@
 from datetime import date, timedelta
 
+import plotly.graph_objects as go
 import streamlit as st
+from plotly.subplots import make_subplots
 
 from views.common import (
+    CALENDAR_HORIZONS,
     DEFAULT_END_DATE,
     LOOKBACK_YEARS,
+    RETURN_COLOR_NEGATIVE,
+    RETURN_COLOR_NEUTRAL,
+    RETURN_COLOR_POSITIVE,
+    TRAILING_HORIZONS,
+    chart_layout,
+    compute_return_metrics,
     date_range_error,
     download_data,
     get_available_date_bounds,
@@ -39,6 +48,55 @@ ALL_TICKERS = tuple(ticker for _, members in GROUPS for ticker, _ in members)
 LABELS = {ticker: label for _, members in GROUPS for ticker, label in members}
 
 COMMODITY_EARLIEST = date(2000, 1, 1)
+
+
+def _bar_color(value: float) -> str:
+    if abs(value) < 0.0005:
+        return RETURN_COLOR_NEUTRAL
+    if value > 0:
+        return RETURN_COLOR_POSITIVE
+    return RETURN_COLOR_NEGATIVE
+
+
+def _return_quadrants(
+    title: str,
+    horizons: tuple[str, ...],
+    metrics_by_name: dict[str, dict[str, float | None]],
+) -> None:
+    fig = make_subplots(rows=2, cols=2, subplot_titles=list(horizons), vertical_spacing=0.16)
+    for index, horizon in enumerate(horizons):
+        row = index // 2 + 1
+        col = index % 2 + 1
+        names: list[str] = []
+        values: list[float] = []
+        colors: list[str] = []
+        for name, metrics in metrics_by_name.items():
+            value = metrics.get(horizon)
+            if value is None:
+                continue
+            names.append(name)
+            values.append(value * 100)
+            colors.append(_bar_color(value))
+        fig.add_trace(
+            go.Bar(
+                x=names,
+                y=values,
+                marker=dict(color=colors),
+                hovertemplate="%{x}: %{y:+.1f}%<extra></extra>",
+                showlegend=False,
+            ),
+            row=row,
+            col=col,
+        )
+        fig.update_yaxes(ticksuffix="%", zeroline=True, row=row, col=col)
+    fig.update_layout(
+        **chart_layout(
+            title=title,
+            height=560,
+            margin=dict(t=80, b=40),
+        )
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def render() -> None:
@@ -126,6 +184,23 @@ def render() -> None:
         st.info("Showing bundled commodity data (live Yahoo Finance fetch unavailable).")
 
     st.sidebar.caption(f"Last updated: {prices.index[-1].strftime('%Y-%m-%d')}")
+
+    trailing_by_name: dict[str, dict[str, float | None]] = {}
+    calendar_by_name: dict[str, dict[str, float | None]] = {}
+    for ticker in selected_tickers:
+        if ticker not in prices.columns:
+            continue
+        computed = compute_return_metrics(prices[ticker])
+        if computed is None:
+            continue
+        trailing, calendar = computed
+        name = LABELS[ticker]
+        trailing_by_name[name] = trailing
+        calendar_by_name[name] = calendar
+
+    if trailing_by_name:
+        _return_quadrants("Trailing returns", TRAILING_HORIZONS, trailing_by_name)
+        _return_quadrants("Calendar returns", CALENDAR_HORIZONS, calendar_by_name)
 
     inject_css = True
     for ticker in selected_tickers:

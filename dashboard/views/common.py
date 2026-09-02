@@ -387,12 +387,22 @@ def _show_returns_table(frame: pd.DataFrame) -> None:
     st.markdown(html, unsafe_allow_html=True)
 
 
-def render_return_metrics(prices: pd.Series, *, inject_css: bool = True) -> None:
-    """Trailing (1d–1y) and calendar (WTD–YTD) return tables for one price series."""
+TRAILING_HORIZONS = ("7-day", "30-day", "90-day", "1-year")
+CALENDAR_HORIZONS = (
+    "Week to date",
+    "Month to date",
+    "Quarter to date",
+    "Year to date",
+)
+
+
+def compute_return_metrics(
+    prices: pd.Series,
+) -> tuple[dict[str, float | None], dict[str, float | None]] | None:
+    """Trailing (7d–1y) and calendar (WTD–YTD) returns for one price series."""
     series = prices.dropna()
     if series.empty:
-        st.info("No prices available to compute returns.")
-        return
+        return None
 
     last_day = series.index[-1]
     week_start = last_day - pd.Timedelta(days=int(last_day.weekday()))
@@ -413,6 +423,16 @@ def render_return_metrics(prices: pd.Series, *, inject_css: bool = True) -> None
         "Quarter to date": _since_return(prices, quarter_start),
         "Year to date": _since_return(prices, year_start),
     }
+    return trailing, calendar
+
+
+def render_return_metrics(prices: pd.Series, *, inject_css: bool = True) -> None:
+    """Trailing and calendar return tables for one price series."""
+    metrics = compute_return_metrics(prices)
+    if metrics is None:
+        st.info("No prices available to compute returns.")
+        return
+    trailing, calendar = metrics
 
     trailing_table = pd.DataFrame(
         {label: [_format_return(value)] for label, value in trailing.items()},
