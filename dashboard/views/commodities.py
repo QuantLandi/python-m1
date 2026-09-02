@@ -63,10 +63,10 @@ def _return_quadrants(
     horizons: tuple[str, ...],
     metrics_by_name: dict[str, dict[str, float | None]],
 ) -> None:
-    fig = make_subplots(rows=2, cols=2, subplot_titles=list(horizons), vertical_spacing=0.16)
+    fig = make_subplots(rows=4, cols=1, subplot_titles=list(horizons), vertical_spacing=0.08)
     for index, horizon in enumerate(horizons):
-        row = index // 2 + 1
-        col = index % 2 + 1
+        row = index + 1
+        col = 1
         names: list[str] = []
         values: list[float] = []
         colors: list[str] = []
@@ -92,7 +92,7 @@ def _return_quadrants(
     fig.update_layout(
         **chart_layout(
             title=title,
-            height=560,
+            height=900,
             margin=dict(t=80, b=40),
         )
     )
