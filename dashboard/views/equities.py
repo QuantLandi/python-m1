@@ -82,26 +82,35 @@ def _render_return_metrics(prices: pd.Series) -> None:
     month_start = last_day.replace(day=1)
     year_start = last_day.replace(month=1, day=1)
 
-    trailing = [
-        ("1d", _trading_day_return(prices)),
-        ("7d", _trailing_return(prices, 7)),
-        ("30d", _trailing_return(prices, 30)),
-        ("90d", _trailing_return(prices, 90)),
-        ("1y", _trailing_return(prices, 365)),
-    ]
-    calendar = [
-        ("WTD", _since_return(prices, week_start)),
-        ("MTD", _since_return(prices, month_start)),
-        ("YTD", _since_return(prices, year_start)),
-    ]
+    trailing = {
+        "1d": _trading_day_return(prices),
+        "7d": _trailing_return(prices, 7),
+        "30d": _trailing_return(prices, 30),
+        "90d": _trailing_return(prices, 90),
+        "1y": _trailing_return(prices, 365),
+    }
+    calendar = {
+        "WTD": _since_return(prices, week_start),
+        "MTD": _since_return(prices, month_start),
+        "YTD": _since_return(prices, year_start),
+    }
 
-    cols = st.columns(len(trailing))
-    for col, (label, value) in zip(cols, trailing, strict=True):
-        col.metric(label, _format_return(value))
+    trailing_table = pd.DataFrame(
+        {label: [_format_return(value)] for label, value in trailing.items()},
+        index=["Return"],
+    )
+    calendar_table = pd.DataFrame(
+        {label: [_format_return(value)] for label, value in calendar.items()},
+        index=["Return"],
+    )
 
-    cols = st.columns(len(calendar))
-    for col, (label, value) in zip(cols, calendar, strict=True):
-        col.metric(label, _format_return(value))
+    left, right = st.columns((5, 3))
+    with left:
+        st.caption("Trailing returns")
+        st.table(trailing_table)
+    with right:
+        st.caption("Calendar returns")
+        st.table(calendar_table)
 
 
 def render() -> None:
