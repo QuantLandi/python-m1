@@ -37,7 +37,7 @@ See [DEPLOY.md](DEPLOY.md). On Streamlit Community Cloud, set **Main file path**
 ## Milestones
 
 - [x] **Phase 0** — App shell with four navigable tabs
-- [ ] **Phase 1** — Data pipeline in `views/common.py` (`download_data`, `preprocess`, `normalize`)
+- [x] **Phase 1** — Data pipeline in `views/common.py` (`download_data`, `preprocess`, `normalize`)
 - [ ] **Phase 2** — Equities tab complete (charts, metrics, CSV export)
 - [ ] **Phase 3** — Regime overlays and badges
 - [ ] **Phase 4** — Bonds tab (FRED API)
