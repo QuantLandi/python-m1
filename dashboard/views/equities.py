@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date
 
 import plotly.graph_objects as go
 import streamlit as st
@@ -16,7 +16,25 @@ from views.common import (
 
 SP500_TICKER = "^GSPC"
 SP500_BUNDLED_FILE = "GSPC.csv"
-DEFAULT_LOOKBACK_DAYS = 365
+LOOKBACK_YEARS = {
+    "1y": 1,
+    "3y": 3,
+    "5y": 5,
+    "10y": 10,
+    "20y": 20,
+    "30y": 30,
+    "max": None,
+}
+
+
+def _lookback_start(end: date, years: int | None, earliest: date) -> date:
+    if years is None:
+        return earliest
+    try:
+        start = end.replace(year=end.year - years)
+    except ValueError:
+        start = end.replace(year=end.year - years, month=2, day=28)
+    return max(earliest, start)
 
 
 def render() -> None:
@@ -27,25 +45,12 @@ def render() -> None:
     if bounds is None:
         st.sidebar.warning("Bundled S&P 500 history file missing — date range may be limited.")
     earliest_date = bounds[0] if bounds else DEFAULT_START_DATE
-    default_start = max(earliest_date, DEFAULT_END_DATE - timedelta(days=DEFAULT_LOOKBACK_DAYS))
+    end_date = DEFAULT_END_DATE
 
     with st.sidebar:
-        start_date = st.date_input(
-            "Start date",
-            value=default_start,
-            min_value=earliest_date,
-            max_value=DEFAULT_END_DATE,
-        )
-        end_date = st.date_input(
-            "End date",
-            value=DEFAULT_END_DATE,
-            min_value=earliest_date,
-            max_value=DEFAULT_END_DATE,
-        )
-
-    if start_date > end_date:
-        st.warning("Start date must be on or before the end date.")
-        return
+        lookback = st.selectbox("Lookback", list(LOOKBACK_YEARS), index=0)
+        start_date = _lookback_start(end_date, LOOKBACK_YEARS[lookback], earliest_date)
+        st.caption(f"{start_date:%Y-%m-%d} → {end_date:%Y-%m-%d}")
 
     if start_date == end_date:
         st.warning("Date range must span at least two distinct dates.")
