@@ -7,6 +7,7 @@ import streamlit as st
 from views.common import (
     DEFAULT_END_DATE,
     LOOKBACK_YEARS,
+    _format_observation_timestamp,
     chart_layout,
     date_range_error,
     download_data,
@@ -235,7 +236,7 @@ def render() -> None:
 
     st.sidebar.caption(f"Last updated: {as_of.strftime('%Y-%m-%d')}")
 
-    st.subheader(f"Spot matrix — {as_of.strftime('%Y-%m-%d')}")
+    st.subheader(f"Spot matrix — {_format_observation_timestamp(as_of)}")
     _show_spot_matrix(matrix, numerator, denominator)
 
     pair_name = f"{numerator}/{denominator}"
