@@ -12,6 +12,7 @@ from views.common import (
     RETURN_COLOR_NEUTRAL,
     RETURN_COLOR_POSITIVE,
     TRAILING_HORIZONS,
+    _format_observation_timestamp,
     chart_layout,
     compute_return_metrics,
     date_range_error,
@@ -187,7 +188,9 @@ def render() -> None:
     st.sidebar.caption(f"Last updated: {prices.index[-1].strftime('%Y-%m-%d')}")
 
     st.subheader("Latest prices")
-    render_latest_prices_table(prices, LABELS)
+    obs_ts = render_latest_prices_table(prices, LABELS, transpose=True, inject_css=True)
+    if obs_ts is not None:
+        st.caption(f"Observed at {_format_observation_timestamp(obs_ts)}")
 
     trailing_by_name: dict[str, dict[str, float | None]] = {}
     calendar_by_name: dict[str, dict[str, float | None]] = {}

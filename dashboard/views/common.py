@@ -436,28 +436,41 @@ def render_latest_prices_table(
     labels: dict[str, str] | None = None,
     *,
     inject_css: bool = True,
-) -> None:
-    """Show a table with the latest observed price and observation timestamp for each column."""
-    rows: list[dict[str, str]] = []
+    transpose: bool = False,
+) -> pd.Timestamp | None:
+    """Show a table with the latest observed price for each column.
+
+    When *transpose* is True the table has assets as columns and a single row,
+    and the "Observed at" column is omitted (caller should display it elsewhere).
+
+    Returns the latest observation timestamp across all columns, or None.
+    """
+    formatted: dict[str, str] = {}
+    latest_ts: pd.Timestamp | None = None
     for col in prices.columns:
         series = prices[col].dropna()
         if series.empty:
             continue
         last_ts = series.index[-1]
+        if latest_ts is None or last_ts > latest_ts:
+            latest_ts = last_ts
         name = labels[col] if labels and col in labels else col
-        rows.append(
-            {
-                "Asset": name,
-                "Last price": f"{series.iloc[-1]:,.2f}",
-                "Observed at": _format_observation_timestamp(last_ts),
-            }
-        )
-    if not rows:
-        return
-    table = pd.DataFrame(rows)
+        formatted[name] = f"{series.iloc[-1]:,.2f}"
+    if not formatted:
+        return None
     if inject_css:
         st.markdown(RETURNS_TABLE_CSS, unsafe_allow_html=True)
+    if transpose:
+        table = pd.DataFrame(formatted, index=["Last price"])
+    else:
+        rows = []
+        for name, price in formatted.items():
+            row: dict[str, str] = {"Asset": name, "Last price": price}
+            row["Observed at"] = _format_observation_timestamp(latest_ts)  # type: ignore[arg-type]
+            rows.append(row)
+        table = pd.DataFrame(rows)
     _show_returns_table(table)
+    return latest_ts
 
 
 def render_return_metrics(prices: pd.Series, *, inject_css: bool = True) -> None:
