@@ -14,6 +14,7 @@ from views.common import (
     get_available_date_bounds,
     lookback_start,
     preprocess,
+    render_latest_prices_table,
     render_return_metrics,
 )
 
@@ -92,6 +93,9 @@ def render() -> None:
         st.info("Showing bundled S&P 500 data (live Yahoo Finance fetch unavailable).")
 
     st.sidebar.caption(f"Last updated: {prices.index[-1].strftime('%Y-%m-%d')}")
+
+    st.subheader("Latest price")
+    render_latest_prices_table(prices, {SP500_TICKER: "S&P 500"})
 
     render_return_metrics(prices[SP500_TICKER])
 

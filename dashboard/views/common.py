@@ -426,6 +426,35 @@ def compute_return_metrics(
     return trailing, calendar
 
 
+def render_latest_prices_table(
+    prices: pd.DataFrame,
+    labels: dict[str, str] | None = None,
+    *,
+    inject_css: bool = True,
+) -> None:
+    """Show a table with the latest observed price and observation date for each column."""
+    rows: list[dict[str, str]] = []
+    for col in prices.columns:
+        series = prices[col].dropna()
+        if series.empty:
+            continue
+        last_ts = series.index[-1]
+        name = labels[col] if labels and col in labels else col
+        rows.append(
+            {
+                "Asset": name,
+                "Last price": f"{series.iloc[-1]:,.2f}",
+                "Observed": last_ts.strftime("%Y-%m-%d"),
+            }
+        )
+    if not rows:
+        return
+    table = pd.DataFrame(rows)
+    if inject_css:
+        st.markdown(RETURNS_TABLE_CSS, unsafe_allow_html=True)
+    _show_returns_table(table)
+
+
 def render_return_metrics(prices: pd.Series, *, inject_css: bool = True) -> None:
     """Trailing and calendar return tables for one price series."""
     metrics = compute_return_metrics(prices)

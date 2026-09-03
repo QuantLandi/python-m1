@@ -18,6 +18,7 @@ from views.common import (
     download_data,
     get_available_date_bounds,
     lookback_start,
+    render_latest_prices_table,
     render_return_metrics,
 )
 
@@ -184,6 +185,9 @@ def render() -> None:
         st.info("Showing bundled commodity data (live Yahoo Finance fetch unavailable).")
 
     st.sidebar.caption(f"Last updated: {prices.index[-1].strftime('%Y-%m-%d')}")
+
+    st.subheader("Latest prices")
+    render_latest_prices_table(prices, LABELS)
 
     trailing_by_name: dict[str, dict[str, float | None]] = {}
     calendar_by_name: dict[str, dict[str, float | None]] = {}
