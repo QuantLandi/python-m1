@@ -426,13 +426,18 @@ def compute_return_metrics(
     return trailing, calendar
 
 
+def _format_observation_timestamp(timestamp: pd.Timestamp) -> str:
+    """Format the observation timestamp from the price index."""
+    return timestamp.strftime("%Y-%m-%d %H:%M:%S")
+
+
 def render_latest_prices_table(
     prices: pd.DataFrame,
     labels: dict[str, str] | None = None,
     *,
     inject_css: bool = True,
 ) -> None:
-    """Show a table with the latest observed price and observation date for each column."""
+    """Show a table with the latest observed price and observation timestamp for each column."""
     rows: list[dict[str, str]] = []
     for col in prices.columns:
         series = prices[col].dropna()
@@ -444,7 +449,7 @@ def render_latest_prices_table(
             {
                 "Asset": name,
                 "Last price": f"{series.iloc[-1]:,.2f}",
-                "Observed": last_ts.strftime("%Y-%m-%d"),
+                "Observed at": _format_observation_timestamp(last_ts),
             }
         )
     if not rows:
