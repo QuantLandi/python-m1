@@ -39,9 +39,14 @@ def _cache_data_with_background_refresh(func):
     in the background.
     """
     cache_kwargs = dict(show_spinner=False, ttl=LIVE_REFRESH_TTL_SECONDS)
-    if "refresh_mode" in inspect.signature(st.cache_data).parameters:
-        cache_kwargs["refresh_mode"] = "background"
-    return st.cache_data(**cache_kwargs)(func)
+    try:
+        if "refresh_mode" in inspect.signature(st.cache_data).parameters:
+            cache_kwargs["refresh_mode"] = "background"
+        return st.cache_data(**cache_kwargs)(func)
+    except TypeError:
+        # Older or unexpected Streamlit builds may reject refresh_mode at call time.
+        cache_kwargs.pop("refresh_mode", None)
+        return st.cache_data(**cache_kwargs)(func)
 
 
 @dataclass(frozen=True)
@@ -455,19 +460,35 @@ def _poll_refresh_once(refresh_key: RefreshKey) -> None:
         st.rerun()
 
 
-_refresh_status_poller = (
-    st.fragment(run_every=2.0)(_poll_refresh_once)
-    if hasattr(st, "fragment")
-    else None
-)
+# Lazily built on first render — never call st.fragment at import time.
+# Module-level fragment registration breaks multipage imports on Streamlit Cloud.
+_refresh_status_poller = None
+
+
+def _get_refresh_status_poller():
+    """Return a fragment poller, creating it once inside an active script run."""
+    global _refresh_status_poller
+    if _refresh_status_poller is not None:
+        return _refresh_status_poller
+    if not hasattr(st, "fragment"):
+        _refresh_status_poller = False
+        return None
+    try:
+        _refresh_status_poller = st.fragment(run_every=2.0)(_poll_refresh_once)
+    except Exception:
+        logger.exception("Could not create refresh-status fragment poller")
+        _refresh_status_poller = False
+        return None
+    return _refresh_status_poller
 
 
 def render_data_refresh_status(result: DataLoadResult, source: str) -> None:
     """Explain which snapshot is shown and poll only this view's refresh."""
     if result.pending:
         st.caption(f"Live {source} update in progress — showing bundled data.")
-        if result.refresh_key is not None and _refresh_status_poller is not None:
-            _refresh_status_poller(result.refresh_key)
+        poller = _get_refresh_status_poller()
+        if result.refresh_key is not None and poller:
+            poller(result.refresh_key)
     elif result.status == "error":
         detail = f" Details: {result.error}" if result.error else ""
         st.warning(f"Live {source} update unavailable — showing bundled data.{detail}")

@@ -1,8 +1,12 @@
+import sys
 from pathlib import Path
 
 import streamlit as st
 
 APP_DIR = Path(__file__).parent
+# Streamlit Cloud runs from the repo root; keep dashboard/ importable for views.*.
+if str(APP_DIR) not in sys.path:
+    sys.path.insert(0, str(APP_DIR))
 
 st.set_page_config(
     page_title="Cross-Asset Market Monitor",
