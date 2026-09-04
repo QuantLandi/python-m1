@@ -10,10 +10,11 @@ from views.common import (
     LOOKBACK_YEARS,
     chart_layout,
     date_range_error,
-    download_data,
     get_available_date_bounds,
+    load_data_local_first,
     lookback_start,
     preprocess,
+    render_data_refresh_status,
     render_latest_prices_table,
     render_return_metrics,
 )
@@ -67,8 +68,11 @@ def render() -> None:
 
     metrics_start = max(earliest_date, end_date - timedelta(days=365 + 21))
     fetch_start = min(start_date, metrics_start)
-    prices = download_data((SP500_TICKER,), fetch_start, end_date, use_live=True)
-    prices = preprocess(prices)
+    prices_result = load_data_local_first(
+        (SP500_TICKER,), fetch_start, end_date, use_live=True
+    )
+    render_data_refresh_status(prices_result, "Yahoo Finance")
+    prices = preprocess(prices_result.data)
 
     if prices.empty:
         st.error(

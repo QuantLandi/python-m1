@@ -9,9 +9,10 @@ from views.common import (
     LOOKBACK_YEARS,
     chart_layout,
     date_range_error,
-    download_fred_data,
     get_available_date_bounds,
+    load_fred_data_local_first,
     lookback_start,
+    render_data_refresh_status,
 )
 
 CHART_COLOR = "#FF962F"
@@ -138,7 +139,11 @@ def render() -> None:
         st.warning(range_error)
         return
 
-    yields = download_fred_data(ALL_FRED_IDS, start_date, end_date, use_live=True)
+    yields_result = load_fred_data_local_first(
+        ALL_FRED_IDS, start_date, end_date, use_live=True
+    )
+    render_data_refresh_status(yields_result, "FRED")
+    yields = yields_result.data
     if not yields.empty:
         yields = yields.ffill().dropna(how="all")
 
