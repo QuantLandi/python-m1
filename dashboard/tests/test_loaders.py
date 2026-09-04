@@ -1,7 +1,12 @@
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date
+from threading import Barrier, Event, Lock
+import time
 
 import pandas as pd
+import pytest
 
+import views.common as common
 from views.common import (
     _storage_filename,
     date_range_error,
@@ -160,3 +165,163 @@ def test_pair_rate_is_numerator_over_denominator() -> None:
     assert abs(eurjpy - 1.12 * 148.0) < 1e-9
     ones = pair_rate(paths, "EUR", "EUR")
     assert list(ones) == [1.0]
+
+
+def test_yahoo_fallback_fetches_tickers_concurrently(monkeypatch) -> None:
+    """A grouped Yahoo failure must fan out the per-ticker fallback workers."""
+    tickers = ("AAA", "BBB", "CCC")
+    entered = Barrier(len(tickers))
+    active_lock = Lock()
+    active = 0
+    max_active = 0
+
+    def fail_grouped(*args, **kwargs):
+        raise RuntimeError("grouped endpoint unavailable")
+
+    class FakeTicker:
+        def __init__(self, symbol: str):
+            self.symbol = symbol
+
+        def history(self, **kwargs):
+            nonlocal active, max_active
+            with active_lock:
+                active += 1
+                max_active = max(max_active, active)
+            try:
+                # If the fallback were sequential, the first worker could
+                # never pass this barrier and the test would fail promptly.
+                entered.wait(timeout=2)
+                index = pd.date_range("2024-01-02", periods=2, freq="D")
+                return pd.DataFrame({"Close": [1.0, 2.0]}, index=index)
+            finally:
+                with active_lock:
+                    active -= 1
+
+    monkeypatch.setattr(common.yf, "download", fail_grouped)
+    monkeypatch.setattr(common.yf, "Ticker", FakeTicker)
+
+    result = common._fetch_live_prices_uncached(
+        tickers, date(2024, 1, 1), date(2024, 1, 3)
+    )
+
+    assert max_active == len(tickers)
+    assert list(result.columns) == list(tickers)
+    assert result.shape == (2, len(tickers))
+
+
+@pytest.fixture
+def isolated_refresh_pool(monkeypatch):
+    """Keep background-refresh futures isolated and shut down after each test."""
+    executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="test-refresh")
+    monkeypatch.setattr(common, "_REFRESH_EXECUTOR", executor)
+    monkeypatch.setattr(common, "_REFRESH_STATES", {})
+    yield
+    executor.shutdown(wait=True, cancel_futures=True)
+
+
+def _write_local_series(tmp_path, symbol: str = "AAA") -> None:
+    index = pd.to_datetime(["2024-01-01", "2024-01-02"])
+    pd.DataFrame({"Close": [100.0, 101.0]}, index=index).to_csv(
+        tmp_path / f"{symbol}.csv"
+    )
+
+
+def test_local_first_returns_local_data_while_refresh_is_pending(
+    tmp_path, monkeypatch, isolated_refresh_pool
+) -> None:
+    _write_local_series(tmp_path)
+    monkeypatch.setattr(common, "DATA_DIR", tmp_path)
+    started = Event()
+    release = Event()
+
+    def blocked_worker(source, symbols, live_start, end_date):
+        started.set()
+        assert release.wait(timeout=2)
+        return pd.DataFrame(
+            {"AAA": [102.0]}, index=pd.to_datetime(["2024-01-03"])
+        )
+
+    monkeypatch.setattr(common, "_refresh_worker", blocked_worker)
+    result = common.load_data_local_first(
+        ("AAA",), date(2024, 1, 1), date(2024, 1, 3)
+    )
+    assert started.wait(timeout=1)
+    assert result.status == "pending"
+    assert result.pending is True
+    assert list(result.data["AAA"]) == [100.0, 101.0]
+    assert result.refresh_key is not None
+
+    release.set()
+    for _ in range(100):
+        if not common.poll_data_refresh(result.refresh_key):
+            break
+        time.sleep(0.01)
+    else:
+        pytest.fail("background refresh did not complete")
+    completed = common.load_data_local_first(
+        ("AAA",), date(2024, 1, 1), date(2024, 1, 3)
+    )
+    assert completed.status == "fresh"
+    assert completed.pending is False
+    assert completed.error is None
+    assert completed.last_updated is not None
+    assert list(completed.data["AAA"]) == [100.0, 101.0, 102.0]
+
+
+def test_local_first_exposes_background_refresh_error_and_keeps_local_data(
+    tmp_path, monkeypatch, isolated_refresh_pool
+) -> None:
+    _write_local_series(tmp_path)
+    monkeypatch.setattr(common, "DATA_DIR", tmp_path)
+    started = Event()
+    release = Event()
+
+    def failed_worker(source, symbols, live_start, end_date):
+        started.set()
+        assert release.wait(timeout=2)
+        raise RuntimeError("Yahoo unavailable")
+
+    monkeypatch.setattr(common, "_refresh_worker", failed_worker)
+    pending = common.load_data_local_first(
+        ("AAA",), date(2024, 1, 1), date(2024, 1, 3)
+    )
+    assert started.wait(timeout=1)
+    assert pending.status == "pending"
+
+    release.set()
+    for _ in range(100):
+        if not common.poll_data_refresh(pending.refresh_key):
+            break
+        time.sleep(0.01)
+    else:
+        pytest.fail("background refresh did not complete")
+    failed = common.load_data_local_first(
+        ("AAA",), date(2024, 1, 1), date(2024, 1, 3)
+    )
+    assert failed.status == "error"
+    assert failed.pending is False
+    assert failed.error == "Yahoo unavailable"
+    assert list(failed.data["AAA"]) == [100.0, 101.0]
+
+
+def test_local_first_skips_refresh_when_bundle_covers_requested_end(
+    tmp_path, monkeypatch, isolated_refresh_pool
+) -> None:
+    index = pd.to_datetime(["2024-01-01", "2024-01-02", "2024-01-03"])
+    pd.DataFrame({"Close": [100.0, 101.0, 102.0]}, index=index).to_csv(
+        tmp_path / "AAA.csv"
+    )
+    monkeypatch.setattr(common, "DATA_DIR", tmp_path)
+
+    def unexpected_worker(*args, **kwargs):
+        raise AssertionError("a covered local range should not refresh")
+
+    monkeypatch.setattr(common, "_refresh_worker", unexpected_worker)
+    result = common.load_data_local_first(
+        ("AAA",), date(2024, 1, 1), date(2024, 1, 3)
+    )
+    assert result.status == "fresh"
+    assert result.pending is False
+    assert result.error is None
+    assert result.refresh_key is None
+    assert list(result.data["AAA"]) == [100.0, 101.0, 102.0]

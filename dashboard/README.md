@@ -42,6 +42,14 @@ uv run --project dashboard streamlit run dashboard/dashboard.py
 
 Streamlit opens in wide mode. Use the sidebar to switch between Stocks, Bonds, Commodities, and Currencies.
 
+### Data refresh behavior
+
+Each page renders its bundled CSV snapshot first, then refreshes the missing
+Yahoo Finance or FRED tail in the background. Successful live snapshots remain
+fresh for one hour and the previous snapshot stays visible while it is renewed.
+If Yahoo's grouped request fails, missing tickers are retried concurrently with
+at most four requests in flight; a failed refresh leaves bundled data visible.
+
 ## Deploy
 
 See [DEPLOY.md](DEPLOY.md). On Streamlit Community Cloud, set **Main file path** to `dashboard/dashboard.py` and **Python** to `3.12`.

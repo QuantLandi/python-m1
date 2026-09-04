@@ -16,9 +16,10 @@ from views.common import (
     chart_layout,
     compute_return_metrics,
     date_range_error,
-    download_data,
     get_available_date_bounds,
+    load_data_local_first,
     lookback_start,
+    render_data_refresh_status,
     render_latest_prices_table,
     render_return_metrics,
 )
@@ -166,7 +167,11 @@ def render() -> None:
 
     metrics_start = max(earliest_date, end_date - timedelta(days=365 + 21))
     fetch_start = min(start_date, metrics_start)
-    prices = download_data(selected_tickers, fetch_start, end_date, use_live=True)
+    prices_result = load_data_local_first(
+        selected_tickers, fetch_start, end_date, use_live=True
+    )
+    render_data_refresh_status(prices_result, "Yahoo Finance")
+    prices = prices_result.data
     if not prices.empty:
         prices = prices.ffill().dropna(how="all")
 

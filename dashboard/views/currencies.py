@@ -10,10 +10,11 @@ from views.common import (
     _format_observation_timestamp,
     chart_layout,
     date_range_error,
-    download_data,
     get_available_date_bounds,
+    load_data_local_first,
     lookback_start,
     preprocess,
+    render_data_refresh_status,
 )
 
 # G8 currencies. Spot crosses are implied from USD legs (Yahoo Finance).
@@ -201,8 +202,11 @@ def render() -> None:
 
     fetch_start = max(earliest_date, end_date - timedelta(days=30))
     fetch_start = min(start_date, fetch_start)
-    prices = download_data(FX_TICKERS, fetch_start, end_date, use_live=True)
-    prices = preprocess(prices)
+    prices_result = load_data_local_first(
+        FX_TICKERS, fetch_start, end_date, use_live=True
+    )
+    render_data_refresh_status(prices_result, "Yahoo Finance")
+    prices = preprocess(prices_result.data)
 
     if prices.empty:
         st.error(
