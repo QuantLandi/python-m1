@@ -4,9 +4,7 @@ Ungraded in-class practice. Exam-style: code snippet + 5 true/false statements.
 
 - **Review:** one question at a time
 - **Scope:** full DataCamp course (Ch 1–4)
-- **Plan:** 12 questions (Q11–Q12 are tricky review); allow ~70 min for Q1–Q10
-
-Instructor answer key: [session-02-quiz-answers.md](session-02-quiz-answers.md)
+- **Plan:** 12 questions (Q11–Q12 are tricky review)
 
 ---
 

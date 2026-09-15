@@ -97,9 +97,9 @@ Student-file title: `# Session N quiz — <DataCamp course title>`. Then the sam
 
 - **Review:** one question at a time
 - **Scope:** full DataCamp course (Ch 1–…)
-- **Plan:** 12 questions (Q11–Q12 are tricky review); allow ~70 min for Q1–Q10
+- **Plan:** 12 questions (Q11–Q12 are tricky review)
 
-Link the answer key from the student file (`Instructor answer key: [session-NN-quiz-answers.md](...)`).
+Do **not** link the answer key from the student file.
 
 Question headings: `## Question N (Chapter K — short topic)` for Q1–Q10; `## Question N (Review — short topic)` for Q11–Q12.
 

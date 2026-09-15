@@ -32,7 +32,7 @@ How to write a quiz (format, item-writing, QA, in class): [instructor-guide.md �
 For remaining DataCamp sessions (3–7), add quizzes via pull request (do not push straight to `main`). Sessions 8–12 are in-class project, not this quiz format.
 
 1. Clone this repo and create a branch (one **session per PR**).
-2. Add `quizzes/session-NN-quiz.md` and `quizzes/session-NN-quiz-answers.md`, matching the session 1–2 pattern (exam-style code + 5 true/false; answer key with **CORRECT ANSWERS** and a short **Debrief tip**). Link the student file to the answer key and align scope with that session’s DataCamp course in [syllabus.md](syllabus.md).
+2. Add `quizzes/session-NN-quiz.md` and `quizzes/session-NN-quiz-answers.md`, matching the session 1–2 pattern (exam-style code + 5 true/false; answer key with **CORRECT ANSWERS** and a short **Debrief tip**). Keep the answer key out of the student file and align scope with that session’s DataCamp course in [syllabus.md](syllabus.md).
 3. Update the file table below with both new links.
 4. Open a PR. Do **not** commit `.venv/` (or other local IDE junk); `uv.lock` / `pyproject.toml` only if you intentionally change dependencies.
 
