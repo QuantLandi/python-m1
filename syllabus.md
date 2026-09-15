@@ -2,18 +2,22 @@
 
 ## Administrative information
 
-| Field | Value |
-|-------|-------|
-| Programme / Program | PGE |
-| Campus | Multicampus (Lille / Sophia) |
-| Year of study | M1 |
-| Academic year | 2026/2027 |
-| Semester | Fall |
-| Course title | Python Programming for Finance |
-| Course leader | Alexandre LANDI |
-| Language of instruction | English |
+
+| Field                   | Value                          |
+| ----------------------- | ------------------------------ |
+| Programme / Program     | PGE                            |
+| Campus                  | Multicampus (Lille / Sophia)   |
+| Year of study           | M1                             |
+| Academic year           | 2026/2027                      |
+| Semester                | Fall                           |
+| Course title            | Python Programming for Finance |
+| Course leader           | Alexandre LANDI                |
+| Language of instruction | English                        |
+
 
 ---
+
+
 
 ## Course description
 
@@ -24,6 +28,8 @@ The course uses finance-themed examples (stock prices, market listings, returns)
 **Prerequisite:** none. Familiarity with spreadsheets is helpful but not required.
 
 ---
+
+
 
 ## Learning outcomes
 
@@ -40,6 +46,8 @@ Upon completion, students will be able to:
 
 ---
 
+
+
 ### DataCamp courses used
 
 **Midterm** — exam covers:
@@ -55,7 +63,7 @@ Upon completion, students will be able to:
 
 - [Software Engineering Principles in Python](https://app.datacamp.com/learn/courses/software-engineering-principles-in-python)
 
-> Verify DataCamp licensing before classroom use.
+
 
 ### Pre-class work
 
@@ -63,41 +71,44 @@ Students complete the corresponding DataCamp course **before** each session. Cla
 
 ---
 
+
+
 ## Schedule
 
 **Contact time:** 12 sessions × 90 minutes (18 hours total).
 
 Complete the listed DataCamp course **before** the corresponding session (see [Pre-class work](#pre-class-work)).
 
-| Session | Complete before class | In class |
-|--------:|----------------------|----------|
-| 1 | [Introduction to Python for Finance](https://app.datacamp.com/learn/courses/introduction-to-python-for-finance) | Python basics, lists, NumPy — clarification and exam-style exercises |
-| 2 | [Intermediate Python for Finance](https://app.datacamp.com/learn/courses/intermediate-python-for-finance) | Datetimes, comparisons, DataFrame basics — clarification and exam-style exercises |
-| 3 | [Data Manipulation with Pandas](https://app.datacamp.com/learn/courses/data-manipulation-with-pandas) | DataFrames, filtering, aggregation, indexing — clarification and exam-style exercises |
-| 4 | [Importing and Managing Financial Data in Python](https://app.datacamp.com/learn/courses/importing-and-managing-financial-data-in-python) | CSV/Excel import, cleaning, groupby — clarification and exam-style exercises |
-| 5 | [Manipulating Time Series Data in Python](https://app.datacamp.com/learn/courses/manipulating-time-series-data-in-python) | Timestamps, resampling, rolling/expanding windows — clarification and exam-style exercises |
-| 6 | [Introduction to Functions in Python](https://app.datacamp.com/learn/courses/introduction-to-functions-in-python) | User-defined functions, scope, docstrings — clarification and exam-style exercises |
-| — | **Midterm exam** | Covers the six courses above |
-| 7 | [Software Engineering Principles in Python](https://app.datacamp.com/learn/courses/software-engineering-principles-in-python) | Modularity, PEP 8, testing — clarification and exam-style exercises |
-| 8 | — | **In-class project** |
-| 9 | — | **In-class project** |
-| 10 | — | **In-class project** |
-| 11 | — | **In-class project** |
-| 12 | — | **In-class project** |
 
-Students follow one of two tracks for sessions 8–12:
+| Session | Complete before class                                                                                                                     | In class                                                                                   |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| 1       | [Introduction to Python for Finance](https://app.datacamp.com/learn/courses/introduction-to-python-for-finance)                           | Python basics, lists, NumPy — clarification and exam-style exercises                       |
+| 2       | [Intermediate Python for Finance](https://app.datacamp.com/learn/courses/intermediate-python-for-finance)                                 | Datetimes, comparisons, DataFrame basics — clarification and exam-style exercises          |
+| 3       | [Data Manipulation with Pandas](https://app.datacamp.com/learn/courses/data-manipulation-with-pandas)                                     | DataFrames, filtering, aggregation, indexing — clarification and exam-style exercises      |
+| 4       | [Importing and Managing Financial Data in Python](https://app.datacamp.com/learn/courses/importing-and-managing-financial-data-in-python) | CSV/Excel import, cleaning, groupby — clarification and exam-style exercises               |
+| 5       | [Manipulating Time Series Data in Python](https://app.datacamp.com/learn/courses/manipulating-time-series-data-in-python)                 | Timestamps, resampling, rolling/expanding windows — clarification and exam-style exercises |
+| 6       | [Introduction to Functions in Python](https://app.datacamp.com/learn/courses/introduction-to-functions-in-python)                         | User-defined functions, scope, docstrings — clarification and exam-style exercises         |
+| —       | **Midterm exam**                                                                                                                          | Covers the six courses above                                                               |
+| 7       | [Software Engineering Principles in Python](https://app.datacamp.com/learn/courses/software-engineering-principles-in-python)             | Modularity, PEP 8, testing — clarification and exam-style exercises                        |
+| 8       | —                                                                                                                                         | **In-class project**                                                                       |
+| 9       | —                                                                                                                                         | **In-class project**                                                                       |
+| 10      | —                                                                                                                                         | **In-class project**                                                                       |
+| 11      | —                                                                                                                                         | **In-class project**                                                                       |
+| 12      | —                                                                                                                                         | **In-class project**                                                                       |
 
-- **Structured Products** — build a derivative pricing tool
-- **Corporate Valuation** — build a company valuation tool
 
 ---
 
+
+
 ## Assessment
 
-| Component | Format |
-|-----------|--------|
+
+| Component    | Format           |
+| ------------ | ---------------- |
 | Midterm exam | MCQ — code-based |
-| Final exam | MCQ — code-based |
+| Final exam   | MCQ — code-based |
+
 
 **Midterm coverage:** first six DataCamp courses (see [DataCamp courses used](#datacamp-courses-used)).
 
@@ -105,12 +116,14 @@ Students follow one of two tracks for sessions 8–12:
 
 ### Exam rules
 
-- **Duration:** 2 hours `[confirm]`
+- **Duration:** 2 hours
 - **Questions:** 40; each presents a code snippet and 5 true/false statements
 - **Authorized documents:** none
 - **Calculator:** not allowed
 - **Draft paper:** not allowed
 - **Dictionary:** not allowed
+
+
 
 ### Scoring — all-or-nothing per question
 
