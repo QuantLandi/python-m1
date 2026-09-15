@@ -159,11 +159,11 @@ print(prices['pe'].agg([iqr, 'median']))
 print(prices[['price', 'eps']].agg('max'))
 ```
 
-A. The median P/E is less affected by TSLA's extreme P/E than the mean P/E is. — **True**
+A. The median is less sensitive to extreme values (outliers) than the mean. — **True**
 
 B. Inside `.agg()`, the custom function must be called with parentheses: `.agg([iqr(), 'median'])`. — **False**
 
-C. `prices['pe'].agg([iqr, 'median'])` returns two numbers: the IQR and the median of the P/E column. — **True**
+C. `prices['pe'].agg([iqr, 'median'])` returns a Series with two values: the IQR and the median of the P/E column. — **True**
 
 D. `prices[['price', 'eps']].agg('max')` returns a single number. — **False**
 
@@ -171,7 +171,7 @@ E. `prices['pe'].mean()` is greater than `prices['pe'].median()`. — **True**
 
 **CORRECT ANSWERS: A, C, E**
 
-**Debrief tip:** Pass the function object (no parentheses) to `.agg()`. `.agg('max')` on two columns returns one value per column. Mean P/E ≈ 32.8 vs median ≈ 26.6 — TSLA's P/E of 81 drags the mean up; a good moment to discuss robust statistics in valuation screens.
+**Debrief tip:** Median vs mean under outliers is the point of DataCamp's IQR exercise. Pass the function object (no parentheses) to `.agg()`. `.agg('max')` on two columns returns one value per column. Mean P/E ≈ 32.8 vs median ≈ 26.6 — TSLA's P/E of 81 drags the mean up; a good moment to discuss robust statistics in valuation screens.
 
 ---
 
@@ -189,7 +189,7 @@ nav['running_high'] = nav['close'].cummax()
 nav['drawdown'] = nav['close'] / nav['running_high'] - 1
 ```
 
-A. `nav['running_high']` is `[100, 104, 104, 108, 108]`. — **True**
+A. The values in `nav['running_high']` are `100, 104, 104, 108, 108`. — **True**
 
 B. The drawdown on the last row is approximately `-0.028` (about -2.8%). — **True**
 
@@ -337,13 +337,13 @@ B. After `set_index('ticker')`, `'ticker'` is still one of the regular columns o
 
 C. `p_ind.loc[['AAPL', 'TSLA']]` returns two rows. — **True**
 
-D. `p_multi.loc['MSFT']` works because `'MSFT'` is a value in the index. — **False**
+D. `p_multi.loc['MSFT']` returns the MSFT row. — **False**
 
-E. `p_ind.reset_index()` moves `ticker` back from the index into a regular column. — **True**
+E. In the DataFrame returned by `p_ind.reset_index()`, `ticker` is a regular column again. — **True**
 
 **CORRECT ANSWERS: A, C, E**
 
-**Debrief tip:** `set_index` moves the column out of the body (left-aligned in the printout). Passing a list to `.loc[]` selects those rows — cleaner than `.isin()`. `'MSFT'` is in the *inner* level, so `p_multi.loc['MSFT']` raises a `KeyError`; use the tuple `('Tech', 'MSFT')`.
+**Debrief tip:** `set_index` moves the column out of the body (left-aligned in the printout). Passing a list to `.loc[]` selects those rows — cleaner than `.isin()`. `'MSFT'` is in the *inner* level, so `p_multi.loc['MSFT']` raises a `KeyError`; use the tuple `('Tech', 'MSFT')`. `.reset_index()` returns a new DataFrame — `p_ind` itself keeps its index.
 
 ---
 
@@ -371,11 +371,11 @@ C. `c` returns all 5 rows, because pandas accepts a partial date string to slice
 
 D. `a` and `b` contain exactly the same rows. — **False**
 
-E. Slicing by index values with `.loc[]` requires the index to be sorted first. — **True**
+E. Label slicing with `.loc['start':'end']` on a date index requires the index to be sorted first. — **True**
 
 **CORRECT ANSWERS: A, C, E**
 
-**Debrief tip:** The business days are Sep 1, 2, 3, 4 and 7 (`freq='B'` skips the weekend). `.loc` label slices are **inclusive** → 3 rows; `.iloc[1:3]` is **exclusive** like list slicing (Session 1) → 2 rows (Sep 2, 3). Partial strings like `'2026-09'` select the whole month. Remind students: `sort_index()` before slicing by label.
+**Debrief tip:** The business days are Sep 1, 2, 3, 4 and 7 (`freq='B'` skips the weekend). `.loc` label slices are **inclusive** → 3 rows; `.iloc[1:3]` is **exclusive** like list slicing (Session 1) → 2 rows (Sep 2, 3). Partial strings like `'2026-09'` select the whole month. Remind students: `sort_index()` before slicing by label (a single label like `.loc['2026-09-02']` works unsorted; a `start:end` slice does not).
 
 ---
 

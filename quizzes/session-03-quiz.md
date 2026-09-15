@@ -151,11 +151,11 @@ print(prices['pe'].agg([iqr, 'median']))
 print(prices[['price', 'eps']].agg('max'))
 ```
 
-A. The median P/E is less affected by TSLA's extreme P/E than the mean P/E is.
+A. The median is less sensitive to extreme values (outliers) than the mean.
 
 B. Inside `.agg()`, the custom function must be called with parentheses: `.agg([iqr(), 'median'])`.
 
-C. `prices['pe'].agg([iqr, 'median'])` returns two numbers: the IQR and the median of the P/E column.
+C. `prices['pe'].agg([iqr, 'median'])` returns a Series with two values: the IQR and the median of the P/E column.
 
 D. `prices[['price', 'eps']].agg('max')` returns a single number.
 
@@ -177,7 +177,7 @@ nav['running_high'] = nav['close'].cummax()
 nav['drawdown'] = nav['close'] / nav['running_high'] - 1
 ```
 
-A. `nav['running_high']` is `[100, 104, 104, 108, 108]`.
+A. The values in `nav['running_high']` are `100, 104, 104, 108, 108`.
 
 B. The drawdown on the last row is approximately `-0.028` (about -2.8%).
 
@@ -309,9 +309,9 @@ B. After `set_index('ticker')`, `'ticker'` is still one of the regular columns o
 
 C. `p_ind.loc[['AAPL', 'TSLA']]` returns two rows.
 
-D. `p_multi.loc['MSFT']` works because `'MSFT'` is a value in the index.
+D. `p_multi.loc['MSFT']` returns the MSFT row.
 
-E. `p_ind.reset_index()` moves `ticker` back from the index into a regular column.
+E. In the DataFrame returned by `p_ind.reset_index()`, `ticker` is a regular column again.
 
 ---
 
@@ -339,7 +339,7 @@ C. `c` returns all 5 rows, because pandas accepts a partial date string to slice
 
 D. `a` and `b` contain exactly the same rows.
 
-E. Slicing by index values with `.loc[]` requires the index to be sorted first.
+E. Label slicing with `.loc['start':'end']` on a date index requires the index to be sorted first.
 
 ---
 
