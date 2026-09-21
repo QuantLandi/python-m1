@@ -45,5 +45,7 @@ For remaining DataCamp sessions (3–7), add quizzes via pull request (do not pu
 | [quizzes/session-01-quiz-answers.md](quizzes/session-01-quiz-answers.md) | Session 1 answer key (instructor only)          |
 | [quizzes/session-02-quiz.md](quizzes/session-02-quiz.md)                 | Session 2 in-class practice quiz                |
 | [quizzes/session-02-quiz-answers.md](quizzes/session-02-quiz-answers.md) | Session 2 answer key (instructor only)          |
+| [quizzes/session-04-quiz.md](quizzes/session-04-quiz.md)                 | Session 4 in-class practice quiz                |
+| [quizzes/session-04-quiz-answers.md](quizzes/session-04-quiz-answers.md) | Session 4 answer key (instructor only)          |
 
 
