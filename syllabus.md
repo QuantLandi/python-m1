@@ -57,11 +57,12 @@ Upon completion, students will be able to:
 - [Data Manipulation with Pandas](https://app.datacamp.com/learn/courses/data-manipulation-with-pandas)
 - [Importing and Managing Financial Data in Python](https://app.datacamp.com/learn/courses/importing-and-managing-financial-data-in-python)
 - [Manipulating Time Series Data in Python](https://app.datacamp.com/learn/courses/manipulating-time-series-data-in-python)
-- [Introduction to Functions in Python](https://app.datacamp.com/learn/courses/introduction-to-functions-in-python)
 
 **Final** — exam covers all midterm courses, plus:
 
+- [Introduction to Functions in Python](https://app.datacamp.com/learn/courses/introduction-to-functions-in-python)
 - [Software Engineering Principles in Python](https://app.datacamp.com/learn/courses/software-engineering-principles-in-python)
+- the in-class project
 
 
 
@@ -87,8 +88,8 @@ Complete the listed DataCamp course **before** the corresponding session (see [P
 | 3       | [Data Manipulation with Pandas](https://app.datacamp.com/learn/courses/data-manipulation-with-pandas)                                     | DataFrames, filtering, aggregation, indexing — clarification and exam-style exercises      |
 | 4       | [Importing and Managing Financial Data in Python](https://app.datacamp.com/learn/courses/importing-and-managing-financial-data-in-python) | CSV/Excel import, cleaning, groupby — clarification and exam-style exercises               |
 | 5       | [Manipulating Time Series Data in Python](https://app.datacamp.com/learn/courses/manipulating-time-series-data-in-python)                 | Timestamps, resampling, rolling/expanding windows — clarification and exam-style exercises |
+| —       | **Midterm exam**                                                                                                                          | Covers the five courses above                                                              |
 | 6       | [Introduction to Functions in Python](https://app.datacamp.com/learn/courses/introduction-to-functions-in-python)                         | User-defined functions, scope, docstrings — clarification and exam-style exercises         |
-| —       | **Midterm exam**                                                                                                                          | Covers the six courses above                                                               |
 | 7       | [Software Engineering Principles in Python](https://app.datacamp.com/learn/courses/software-engineering-principles-in-python)             | Modularity, PEP 8, testing — clarification and exam-style exercises                        |
 | 8       | —                                                                                                                                         | **In-class project**                                                                       |
 | 9       | —                                                                                                                                         | **In-class project**                                                                       |
@@ -110,9 +111,9 @@ Complete the listed DataCamp course **before** the corresponding session (see [P
 | Final exam   | MCQ — code-based |
 
 
-**Midterm coverage:** first six DataCamp courses (see [DataCamp courses used](#datacamp-courses-used)).
+**Midterm coverage:** first five DataCamp courses (see [DataCamp courses used](#datacamp-courses-used)).
 
-**Final coverage:** all midterm courses, plus Software Engineering Principles in Python.
+**Final coverage:** all midterm courses, plus Introduction to Functions in Python, Software Engineering Principles in Python, and the in-class project.
 
 ### Exam rules
 
